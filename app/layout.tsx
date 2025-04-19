@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import "@/assets/styles/globals.css";
-
+import { APP_NAME, APP_DESCRIPTION, SERVER_URL } from "@/lib/constants";
+import { ThemeProvider } from "@/components/theme-provider";
 const roboto = Roboto({
   weight: ['300', '700'],
   subsets: ["latin"],
@@ -9,8 +10,12 @@ const roboto = Roboto({
 
 
 export const metadata: Metadata = {
-  title: "nxbazaar",
-  description: "online shop",
+  title: {
+      template: '%s | Nxbazaar',
+      default: `${APP_NAME}`,
+  },
+  description: `${APP_DESCRIPTION}`,
+  metadataBase: new URL(SERVER_URL)
 };
 
 export default function RootLayout({
@@ -19,9 +24,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
      <body className={`${roboto.className}`}>
-        {children}
+     <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    {/* <ErrorWrapper> */}
+                    {children}
+                   
+                    {/* </ErrorWrapper> */}
+
+                </ThemeProvider>
       </body>
     </html>
   );
