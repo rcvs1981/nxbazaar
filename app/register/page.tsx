@@ -54,7 +54,7 @@ export default function RegisterPage() {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="name">नाम</Label>
+          <Label htmlFor="name">Name</Label>
           <Input
             id="name"
             type="text"
@@ -65,7 +65,7 @@ export default function RegisterPage() {
         </div>
         
         <div>
-          <Label htmlFor="email">ईमेल</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
@@ -76,7 +76,7 @@ export default function RegisterPage() {
         </div>
         
         <div>
-          <Label htmlFor="password">पासवर्ड</Label>
+          <Label htmlFor="password">Password</Label>
           <Input
             id="password"
             type="password"

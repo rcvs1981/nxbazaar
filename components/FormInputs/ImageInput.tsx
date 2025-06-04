@@ -19,6 +19,7 @@ type UploadThingResponse = {
   // Add other properties you expect from the response
 }[];
 export default function ImageInput({
+    
   label,
   imageUrl = "",
   setImageUrl,
@@ -43,12 +44,13 @@ export default function ImageInput({
           <button
             onClick={() => setImageUrl("")}
             type="button"
-            className="flex space-x-2  bg-slate-900 rounded-md shadow text-slate-50  py-2 px-4"
+            className="flex space-x-2  bg-slate-600 rounded-md shadow text-slate-50  py-2 px-4"
           >
             <Pencil className="w-5 h-5" />
             <span>Change Image</span>
           </button>
         )}
+       
       </div>
       {imageUrl ? (
         <Image
@@ -79,28 +81,4 @@ export default function ImageInput({
   );
 }
 
-
   
-{/** 
-import { UploadButton } from "@/lib/uploadthing";
-
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <UploadButton
-        endpoint="imageUploader"
-        onClientUploadComplete={(res) => {
-          // Do something with the response
-          console.log("Files: ", res);
-          alert("Upload Completed");
-        }}
-        onUploadError={(error: Error) => {
-          // Do something with the error.
-          alert(`ERROR! ${error.message}`);
-        }}
-      />
-    </main>
-  );
-}
-
-   */}
