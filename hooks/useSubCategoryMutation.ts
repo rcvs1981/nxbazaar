@@ -1,11 +1,12 @@
 "use client"
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createSubCategory,
   updateSubCategory,
   deleteSubCategory,
   deleteMultipleSubCategories,
+  getSubCategories,
 } from "@/actions/subcategory"
 
 export function useCreateSubCategory() {
@@ -50,5 +51,14 @@ export function useMultiDeleteSubCategory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] })
     },
+  })
+}
+
+export function useSubCategories(initialData: any[]) {
+  return useQuery({
+    queryKey: ["subcategories"],
+    queryFn: getSubCategories,
+    initialData,
+    staleTime: 1000 * 60 * 5, // 5 min cache
   })
 }

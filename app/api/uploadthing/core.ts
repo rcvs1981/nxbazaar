@@ -12,6 +12,13 @@ export const ourFileRouter = {
       url: file.ufsUrl,   // ⭐ IMPORTANT (v7)
     };
   }),
+  subcategoryImageUploader: f({
+    image: { maxFileSize: "4MB", maxFileCount: 1 },
+  }).onUploadComplete(async ({ file }) => {
+    return {
+      url: file.ufsUrl,   // ⭐ IMPORTANT (v7)
+    };
+  }),
 
   // PRODUCT GALLERY (multiple images)
   productGallery: f({

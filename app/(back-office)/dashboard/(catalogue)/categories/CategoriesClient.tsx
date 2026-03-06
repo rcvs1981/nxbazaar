@@ -18,6 +18,8 @@ export default function CategoriesClient({
     <DataTable<Category>
       data={data ?? []}
       columns={columns}
+      endpoint="categories"
+      queryKey={["categories"]}
     />
   )
 }

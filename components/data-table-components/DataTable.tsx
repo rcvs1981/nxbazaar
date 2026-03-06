@@ -34,6 +34,8 @@ interface DataTableProps<
   columns: ColumnDef<TData>[];
   data: TData[];
   filterKeys?: (keyof TData)[];
+  endpoint?: string;
+  queryKey?: readonly unknown[];
 }
 
 export default function DataTable<
@@ -42,6 +44,8 @@ export default function DataTable<
   columns,
   data,
   filterKeys = [],
+  endpoint = "",
+  queryKey = [],
 }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] =
     React.useState({});
@@ -79,8 +83,8 @@ export default function DataTable<
     <div className="space-y-4">
       <DataTableToolbar<TData>
         table={table}
-        endpoint=""
-        queryKey={[]}
+        endpoint={endpoint}
+        queryKey={queryKey}
       />
 
       <div className="rounded-md border">

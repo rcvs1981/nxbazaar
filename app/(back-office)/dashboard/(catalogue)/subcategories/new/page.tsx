@@ -1,5 +1,8 @@
-import SubCategoryForm from "@/components/backoffice/Forms/NewSubCategoryForm"
+import SubCategoryForm from "@/components/backoffice/Forms/SubCategoryForm"
+import { getCategories } from "@/actions/category"
 
-export default function NewSubCategoryPage() {
-  return <SubCategoryForm />
+export default async function NewSubCategoryPage() {
+  const categories = await getCategories()
+
+  return <SubCategoryForm categories={categories} />
 }

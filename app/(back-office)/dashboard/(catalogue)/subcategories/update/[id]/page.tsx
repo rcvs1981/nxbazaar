@@ -1,21 +1,30 @@
 import {db} from "@/lib/db"
-import SubCategoryForm from "@/components/backoffice/Forms/NewSubCategoryForm"
+import { getCategories } from "@/actions/category"
+import SubCategoryForm from "@/components/backoffice/Forms/SubCategoryForm"
+import { notFound } from "next/navigation"
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function UpdateSubCategoryPage({ params }: Props) {
-  const subcategory = await db.subCategory.findUnique({
-    where: { id: params.id },
-  })
+  const { id } = await params
 
-  if (!subcategory) return null
+  const [subcategory, categories] = await Promise.all([
+    db.subCategory.findUnique({
+      where: { id },
+    }),
+    getCategories(),
+  ])
+
+  if (!subcategory) {
+    notFound()
+  }
 
   return (
     <SubCategoryForm
-      initialData={subcategory}
-      id={subcategory.id}
+      updateData={subcategory}
+      categories={categories}
     />
   )
 }

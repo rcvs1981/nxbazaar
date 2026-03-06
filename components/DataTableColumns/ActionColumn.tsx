@@ -18,7 +18,7 @@ import EditBtn from "../Actions/EditBtn"
 interface ActionColumnProps<T extends { id: string }> {
   row: Row<T>
   title: string
-  endpoint: string
+  endpoint: string       // full endpoint including id, e.g. "categories/123"
   editEndpoint: string
 }
 
@@ -28,7 +28,7 @@ export default function ActionColumn<
   row,
   title,
   endpoint,
-  editEndpoint
+  editEndpoint,
 }: ActionColumnProps<T>) {
 
   const id = row.original.id

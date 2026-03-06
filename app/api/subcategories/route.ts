@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { subCategorySchema } from "@/lib/validators/subcategory.schema";
+import { generateSlug } from "@/lib/utils/Slug";
 
 // ================= CREATE =================
 export async function POST(req: Request) {
@@ -8,6 +9,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const validatedData = subCategorySchema.parse(body);
+    const slug = generateSlug(validatedData.title);
 
     // Check category exists
     const categoryExists = await db.category.findUnique({
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
 
     // Check slug uniqueness
     const existing = await db.subCategory.findUnique({
-      where: { slug: validatedData.slug },
+      where: { slug },
     });
 
     if (existing) {
@@ -34,7 +36,10 @@ export async function POST(req: Request) {
     }
 
     const subCategory = await db.subCategory.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        slug,
+      },
     });
 
     return NextResponse.json(subCategory, { status: 201 });

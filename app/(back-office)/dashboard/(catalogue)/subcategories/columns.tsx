@@ -2,13 +2,13 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
+import ActionColumn from "@/components/DataTableColumns/ActionColumn"
 
 export type SubCategory = {
   id: string
   title: string
   slug: string
-  imageUrl: string
+  imageUrl: string | null
   isActive: boolean
   category: { title: string }
   createdAt: Date
@@ -19,10 +19,14 @@ export const columns: ColumnDef<SubCategory>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
         onCheckedChange={(value) =>
           table.toggleAllPageRowsSelected(!!value)
         }
+        aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
@@ -31,8 +35,11 @@ export const columns: ColumnDef<SubCategory>[] = [
         onCheckedChange={(value) =>
           row.toggleSelected(!!value)
         }
+        aria-label="Select row"
       />
     ),
+    enableSorting: false,
+    enableHiding: false,
   },
   {
     accessorKey: "title",
@@ -59,11 +66,13 @@ export const columns: ColumnDef<SubCategory>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
     cell: ({ row }) => (
-      <Link href={`/dashboard/subcategories/update/${row.original.id}`}>
-        Edit
-      </Link>
+      <ActionColumn
+        row={row}
+        title="SubCategory"
+        editEndpoint={`subcategories/update/${row.original.id}`}
+        endpoint={`subcategories/${row.original.id}`}
+      />
     ),
   },
 ]

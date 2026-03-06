@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { subCategorySchema } from "@/lib/validators/subcategory.schema";
+import { generateSlug } from "@/lib/utils/Slug";
 
 // ================= GET ONE =================
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const subCategory = await db.subCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         products: true,
@@ -35,15 +37,34 @@ export async function GET(
 // ================= UPDATE =================
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const validatedData = subCategorySchema.parse(body);
+    const slug = generateSlug(validatedData.title);
+
+    const existing = await db.subCategory.findFirst({
+      where: {
+        slug,
+        NOT: { id },
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { message: "Slug already exists" },
+        { status: 400 }
+      );
+    }
 
     const updated = await db.subCategory.update({
-      where: { id: params.id },
-      data: validatedData,
+      where: { id },
+      data: {
+        ...validatedData,
+        slug,
+      },
     });
 
     return NextResponse.json(updated);
@@ -58,11 +79,12 @@ export async function PUT(
 // ================= DELETE =================
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await db.subCategory.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

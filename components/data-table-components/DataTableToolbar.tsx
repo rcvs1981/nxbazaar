@@ -48,11 +48,11 @@ export function DataTableToolbar<
       table.resetRowSelection();
       await bulkDelete.mutateAsync(ids);
       toast.success("Deleted successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Bulk delete failed"
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete items"
       );
     }
   };
