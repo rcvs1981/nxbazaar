@@ -1,98 +1,70 @@
-"use client";
+"use client"
 
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CategorySchema, CategoryInput } from "@/lib/validators/category.schema";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { createCategoryAction, updateCategoryAction } from "@/actions/categories/categoryActions";
-import TextInput from "@/components/FormInputs/TextInput";
-import TextareaInput from "@/components/FormInputs/TextAreaInput";
-import ImageInput from "@/components/FormInputs/ImageInput";
-import ToggleInput from "@/components/FormInputs/ToggleInput";
-import SubmitButton from "@/components/FormInputs/SubmitButton";
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { subCategorySchema, SubCategoryInput } from "@/lib/validators/subcategory.schema"
+import { useCreateSubCategory, useUpdateSubCategory } from "@/hooks/useSubCategoryMutation"
+import { useRouter } from "next/navigation"
+import { SubCategory } from "@prisma/client"
 
 interface Props {
-  updateData?: Partial<CategoryInput> & { id?: string };
+  initialData?: SubCategory
+  id?: string
 }
 
-export default function NewCategoryForm({ updateData = {} }: Props) {
-  const router = useRouter();
-  const [imageUrl, setImageUrl] = useState(updateData.imageUrl ?? "");
+export default function SubCategoryForm({ initialData, id }: Props) {
+  const router = useRouter()
 
- const {
-  register,
-  handleSubmit,
-  formState: { errors },
-} = useForm<CategoryInput>({
-  resolver: zodResolver(CategorySchema),
-  defaultValues: {
-    title: updateData.title ?? "",
-    description: updateData.description ?? "",
-    imageUrl: updateData.imageUrl ?? "",
-    isActive: updateData.isActive ?? true,
-  },
-});
+ const form = useForm<SubCategoryInput>({
+  resolver: zodResolver(subCategorySchema),
+  defaultValues: initialData
+    ? {
+        title: initialData.title,
+        slug: initialData.slug,
+        imageUrl: initialData.imageUrl ?? "",
+        description: initialData.description ?? "",
+        isActive: initialData.isActive,
+        categoryId: initialData.categoryId,
+      }
+    : {
+        title: "",
+        slug: "",
+        imageUrl: "",
+        description: "",
+        isActive: true,
+        categoryId: "",
+      },
+})
 
-  const mutation = useMutation({
-    mutationFn: (data: CategoryInput) =>
-      updateData?.id
-        ? updateCategoryAction(updateData.id, data)
-        : createCategoryAction(data),
+  const createMutation = useCreateSubCategory()
+  const updateMutation = useUpdateSubCategory()
 
-    onSuccess: () => {
-      router.push("/dashboard/categories");
-      router.refresh();
-    },
-  });
+  const onSubmit = async (data: SubCategoryInput) => {
+    let res
 
-  const onSubmit = (data: CategoryInput) => {
-    mutation.mutate({
-      ...data,
-      imageUrl,
-    });
-  };
+    if (id) {
+      res = await updateMutation.mutateAsync({ id, data })
+    } else {
+      res = await createMutation.mutateAsync(data)
+    }
+
+    if (res.success) {
+      router.push("/dashboard/subcategories")
+    }
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <TextInput
-        label="Category Title"
-        name="title"
-        register={register}
-        errors={errors}
-      />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <input {...form.register("title")} placeholder="Title" />
+      <input {...form.register("slug")} placeholder="Slug" />
+      <input {...form.register("imageUrl")} placeholder="Image URL" />
+      <textarea {...form.register("description")} placeholder="Description" />
+      <input type="checkbox" {...form.register("isActive")} />
+      <input {...form.register("categoryId")} placeholder="Category ID" />
 
-      <TextareaInput
-        label="Category Description"
-        name="description"
-        register={register}
-        errors={errors}
-      />
-
-      <ImageInput
-        imageUrl={imageUrl}
-        setImageUrl={setImageUrl}
-        endpoint="categoryImageUploader"
-        label="Category Image"
-      />
-
-      <ToggleInput
-        label="Publish your Category"
-        name="isActive"
-        register={register}
-      />
-
-      {mutation.isError && (
-        <p className="text-red-500 text-sm">
-          Failed to save category. Please try again.
-        </p>
-      )}
-
-      <SubmitButton
-        isLoading={mutation.isPending}
-        buttonTitle={updateData?.id ? "Update Category" : "Create Category"}
-      />
+      <button type="submit">
+        {id ? "Update" : "Create"}
+      </button>
     </form>
-  );
+  )
 }
