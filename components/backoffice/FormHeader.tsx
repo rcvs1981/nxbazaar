@@ -10,7 +10,10 @@ export default function FormHeader({ title }: Props) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center justify-between py-6 px-50 bg-white dark:bg-slate-800 rounded-lg shadow mb-8">
+ <div className="flex items-center justify-between py-2 px-6 
+bg-gradient-to-r from-orange-600 to-orange-400 
+dark:from-orange-400 dark:to-orange-400 
+text-white rounded-lg shadow">
       <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
         {title}
       </h2>

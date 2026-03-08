@@ -1,109 +1,91 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { productSchema } from "@/lib/validators/product.schema";
+import {db} from "@/lib/db"
+import { NextResponse } from "next/server"
+import { CreateProductBody } from "@/types/product"
 
-// ================= CREATE =================
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
-    const validated = productSchema.parse(body);
+    const body: CreateProductBody = await request.json()
 
-    // Unique checks
-    const [slugExists, skuExists] = await Promise.all([
-      db.product.findUnique({ where: { slug: validated.slug } }),
-      db.product.findUnique({ where: { sku: validated.sku } }),
-    ]);
+    const {
+      barcode,
+      qrCode,
+      categoryId,
+      description,
+      farmerId,
+      isActive,
+      isWholesale,
+      productCode,
+      productPrice,
+      salePrice,
+      sku,
+      slug,
+      tags,
+      title,
+      unit,
+      wholesalePrice,
+      wholesaleQty,
+      productStock,
+      qty,
+      productImages,
+      gstRate
+    } = body
 
-    if (slugExists)
+    const existingProduct = await db.product.findUnique({
+      where: { slug }
+    })
+
+    if (existingProduct) {
       return NextResponse.json(
-        { message: "Slug already exists" },
-        { status: 400 }
-      );
+        {
+          data: null,
+          message: `Product (${title}) already exists`
+        },
+        { status: 409 }
+      )
+    }
 
-    if (skuExists)
-      return NextResponse.json(
-        { message: "SKU already exists" },
-        { status: 400 }
-      );
+    const newProduct = await db.product.create({
+      data: {
+        barcode,
+        qrCode,
+        categoryId,
+        description,
+        userId: farmerId,
+        productImages,
+        imageUrl: productImages?.[0] ?? null,
 
-    // Relation validation
-    const [category, subCategory, vendor] = await Promise.all([
-      db.category.findUnique({ where: { id: validated.categoryId } }),
-      validated.subCategoryId
-        ? db.subCategory.findUnique({
-            where: { id: validated.subCategoryId },
-          })
-        : null,
-      db.user.findUnique({ where: { id: validated.userId } }),
-    ]);
+        isActive,
+        isWholesale,
 
-    if (!category || !vendor)
-      return NextResponse.json(
-        { message: "Invalid relation data" },
-        { status: 400 }
-      );
+        productCode,
+        sku,
+        slug,
+        tags,
+        title,
+        unit,
 
-    if (validated.subCategoryId && !subCategory)
-      return NextResponse.json(
-        { message: "Invalid subcategory" },
-        { status: 400 }
-      );
+        gstRate,
 
-    const product = await db.product.create({
-      data: validated,
-      include: {
-        category: true,
-        subCategory: true,
-        user: true,
-      },
-    });
+        productPrice,
+        salePrice,
+        wholesalePrice,
 
-    return NextResponse.json(product, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || "Failed to create product" },
-      { status: 500 }
-    );
-  }
-}
+        wholesaleQty,
+        productStock,
+        qty
+      }
+    })
 
-// ================= GET ALL =================
-export async function GET() {
-  try {
-    const products = await db.product.findMany({
-      include: {
-        category: true,
-        subCategory: true,
-        user: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    return NextResponse.json(newProduct)
 
-    return NextResponse.json(products);
   } catch (error) {
+    console.error(error)
+
     return NextResponse.json(
-      { message: "Failed to fetch products" },
+      {
+        message: "Failed to create Product"
+      },
       { status: 500 }
-    );
-  }
-}
-
-// ================= BULK DELETE =================
-export async function DELETE(req: Request) {
-  try {
-    const { ids } = await req.json();
-
-    await db.product.deleteMany({
-      where: { id: { in: ids } },
-    });
-
-    return NextResponse.json({
-      message: "Selected products deleted",
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Bulk delete failed" },
-      { status: 500 }
-    );
+    )
   }
 }

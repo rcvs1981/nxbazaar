@@ -1,41 +1,35 @@
 import { z } from "zod";
 
 export const productSchema = z.object({
-  title: z.string().min(2, "Title required"),
+  title: z.string().min(3),
 
-  slug: z
-    .string()
-    .min(2)
-    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase and hyphen separated"),
+  slug: z.string().optional(),
 
-  imageUrl: z.string().url().optional().or(z.literal("")),
-  productImages: z.array(z.string().url()).optional(),
+  sku: z.string().optional(),
+  barcode: z.string().optional(),
+
+  productPrice: z.coerce.number(),
+  salePrice: z.coerce.number().optional(),
+
+  productStock: z.coerce.number(),
+  unit: z.string().optional(),
 
   description: z.string().optional(),
 
-  isActive: z.boolean(),
-  isWholesale: z.boolean(),
+  categoryId: z.string(),
+  farmerId: z.string(),
 
-  sku: z.string().min(3, "SKU required"),
+  isActive: z.boolean().default(true),
+  isWholesale: z.boolean().default(false),
 
-  productQR: z.string().optional(),
+  wholesalePrice: z.coerce.number().optional(),
+  wholesaleQty: z.coerce.number().optional(),
 
-  unit: z.string().optional(),
+  productImages: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
 
-  productPrice: z.number().positive(),
-  salePrice: z.number().positive(),
-
-  wholesalePrice: z.number().positive().optional(),
-  wholesaleQty: z.number().int().min(1).optional(),
-
-  productStock: z.number().int().min(0).optional(),
-  qty: z.number().int().min(0).optional(),
-
-  tags: z.array(z.string()).optional(),
-
-  categoryId: z.string().min(1),
-  subCategoryId: z.string().optional(),
-  userId: z.string().min(1),
+  qty: z.number().default(1),
+  productCode: z.string().optional(),
 });
 
-export type ProductInput = z.infer<typeof productSchema>;
+export type ProductFormData = z.infer<typeof productSchema>;

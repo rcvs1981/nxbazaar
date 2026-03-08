@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/collapsible";
 
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -68,7 +67,6 @@ export default function Sidebar({ showSidebar, setShowSidebar }: SidebarProps) {
   ];
 
   async function handleLogout() {
-    await signOut();
     router.push("/");
   }
 

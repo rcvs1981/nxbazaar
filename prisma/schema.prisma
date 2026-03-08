@@ -20,9 +20,10 @@ datasource db {
 //////////////////////////////////////////////////////
 
 enum UserRole {
-  ADMIN
+   ADMIN
+  USER
   SELLER
-  CUSTOMER
+  MODERATOR
 }
 
 enum OrderStatus {
@@ -59,7 +60,7 @@ model User {
   name      String?
   email     String   @unique
   password  String?
-  role      UserRole @default(CUSTOMER)
+  role      UserRole @default(USER)
 
   products   Product[]
   orders     Order[]
@@ -67,7 +68,7 @@ model User {
   sales      Sale[]
   coupons    Coupon[]
 
-  userProfile   UserProfile?
+  Profile   UserProfile?
   sellerProfile SellerProfile?
 
   createdAt DateTime @default(now())
@@ -78,27 +79,39 @@ model UserProfile {
   id     String @id @default(uuid())
   userId String @unique
 
-  phone         String?
+  name        String?
+  firstName   String?
+  lastName    String?
+  email       String?
+  username    String?
+  phone       String?
   streetAddress String?
-  city          String?
-  state         String?
-  country       String?
-  zip           String?
-  profileImage  String?
+  city        String?
+  country     String?
+  district    String?
+  dateOfBirth DateTime?
+  profileImage String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SellerProfile {
-  id              String  @id @default(uuid())
-  userId          String  @unique
-  contactPerson   String?
-  phone           String?
-  address         String?
-  landSize        Float?
-  mainCrop        String?
-  isActive        Boolean @default(true)
-
+   id                 String @id @default(uuid())
+  userId             String @unique
+  code               String?
+  contactPerson      String?
+  contactPersonPhone String?
+  profileImageUrl    String?
+  firstName          String?
+  lastName           String?
+  notes              String?
+  phone              String?
+  physicalAddress    String?
+  terms              String?
+  isActive           Boolean?
+  products           String[]
+  landSize           Float?
+  mainCrop           String?
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -320,14 +333,14 @@ model Sale {
 //////////////////////////////////////////////////////
 
 model Coupon {
-  id       String  @id @default(uuid())
-  title    String
-  code     String  @unique
-  discount Float
-  isActive Boolean @default(true)
+  id         String   @id @default(uuid())
+  title      String
+  couponCode String
+  expiryDate DateTime
+  isActive   Boolean
 
-  userId String?
-  user   User? @relation(fields: [userId], references: [id])
+  vendorId String
+  user     User   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -360,3 +373,14 @@ model SlugHistory {
   @@unique([model, language, oldSlug])
 }
 
+
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String
+  link      String
+  imageUrl  String
+  isActive  Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

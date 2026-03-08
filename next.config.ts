@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     { protocol: "https", hostname: "*.ufs.sh" },
   ],
 },
+  turbopack: {},
 };
 
 export default nextConfig;

@@ -1,98 +1,127 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { updateUserSchema } from "@/lib/validators/user.schema";
-import bcrypt from "bcryptjs";
+import {db} from "@/lib/db";
+import { z } from "zod";
 
-// ================= GET ONE =================
+const paramsSchema = z.object({
+  id: z.string().min(1),
+});
+
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+// GET USER
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  { params }: RouteContext
 ) {
   try {
+    const parsed = paramsSchema.safeParse(params);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid user id",
+        },
+        { status: 400 }
+      );
+    }
+
+    const { id } = parsed.data;
+
     const user = await db.user.findUnique({
-      where: { id: params.id },
-      include: {
-        sellerProfile: true,
-        userProfile: true,
-        products: true,
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        profile: true,
       },
     });
 
     if (!user) {
       return NextResponse.json(
-        { message: "User not found" },
+        {
+          success: false,
+          message: "User not found",
+        },
         { status: 404 }
       );
     }
 
-    const { password, ...safeUser } = user;
-
-    return NextResponse.json(safeUser);
+    return NextResponse.json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
+    console.error("GET USER ERROR:", error);
+
     return NextResponse.json(
-      { message: "Failed to fetch user" },
+      {
+        success: false,
+        message: "Failed to fetch user",
+      },
       { status: 500 }
     );
   }
 }
 
-// ================= UPDATE =================
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+// DELETE USER
+export async function DELETE(
+  _req: Request,
+  { params }: RouteContext
 ) {
   try {
-    const body = await req.json();
-    const validatedData = updateUserSchema.parse(body);
+    const parsed = paramsSchema.safeParse(params);
 
-    let updatedData: any = {
-      name: validatedData.name,
-      role: validatedData.role,
-    };
-
-    if (validatedData.password) {
-      updatedData.password = await bcrypt.hash(
-        validatedData.password,
-        10
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid user id",
+        },
+        { status: 400 }
       );
     }
 
-    const updated = await db.user.update({
-      where: { id: params.id },
-      data: updatedData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
+    const { id } = parsed.data;
+
+    const existingUser = await db.user.findUnique({
+      where: { id },
     });
 
-    return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || "Failed to update user" },
-      { status: 500 }
-    );
-  }
-}
+    if (!existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        { status: 404 }
+      );
+    }
 
-// ================= DELETE =================
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    await db.user.delete({
-      where: { id: params.id },
+    const deletedUser = await db.user.delete({
+      where: { id },
     });
 
     return NextResponse.json({
-      message: "User deleted",
+      success: true,
+      data: deletedUser,
+      message: "User deleted successfully",
     });
   } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+
     return NextResponse.json(
-      { message: "Failed to delete user" },
+      {
+        success: false,
+        message: "Failed to delete user",
+      },
       { status: 500 }
     );
   }

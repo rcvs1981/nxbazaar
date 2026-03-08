@@ -6,7 +6,8 @@ export const couponSchema = z.object({
   couponCode: z
     .string()
     .min(3)
-    .regex(/^[A-Z0-9]+$/, "Coupon must be uppercase letters & numbers"),
+    .regex(/^[A-Z0-9]+$/, "Coupon must be uppercase letters & numbers")
+    .optional(),
 
   expiryDate: z
     .string()

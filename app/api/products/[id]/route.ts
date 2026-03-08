@@ -1,30 +1,37 @@
+import {db} from "@/lib/db";
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { productSchema } from "@/lib/validators/product.schema";
 
-// ================= GET ONE =================
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
+/* ---------------- GET PRODUCT ---------------- */
+
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: RouteContext
 ) {
   try {
     const product = await db.product.findUnique({
       where: { id: params.id },
       include: {
         category: true,
-        subCategory: true,
-        user: true,
       },
     });
 
-    if (!product)
+    if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
         { status: 404 }
       );
+    }
 
     return NextResponse.json(product);
-  } catch {
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
       { message: "Failed to fetch product" },
       { status: 500 }
@@ -32,45 +39,68 @@ export async function GET(
   }
 }
 
-// ================= UPDATE =================
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+/* ---------------- DELETE PRODUCT ---------------- */
+
+export async function DELETE(
+  request: Request,
+  { params }: RouteContext
 ) {
   try {
-    const body = await req.json();
-    const validated = productSchema.parse(body);
-
-    const updated = await db.product.update({
+    const product = await db.product.delete({
       where: { id: params.id },
-      data: validated,
     });
 
-    return NextResponse.json(updated);
-  } catch (error: any) {
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
-      { message: error.message || "Failed to update product" },
+      { message: "Failed to delete product" },
       { status: 500 }
     );
   }
 }
 
-// ================= DELETE =================
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+/* ---------------- UPDATE PRODUCT ---------------- */
+
+export async function PUT(
+  request: Request,
+  { params }: RouteContext
 ) {
   try {
-    await db.product.delete({
+    const body = await request.json();
+
+    const product = await db.product.update({
       where: { id: params.id },
+      data: {
+        barcode: body.barcode,
+        categoryId: body.categoryId,
+        description: body.description,
+        userId: body.farmerId,
+        imageUrl: body.imageUrl,
+        isActive: body.isActive,
+        isWholesale: body.isWholesale,
+        productCode: body.productCode,
+        productPrice: Number(body.productPrice),
+        salePrice: Number(body.salePrice),
+        sku: body.sku,
+        slug: body.slug,
+        tags: body.tags,
+        title: body.title,
+        unit: body.unit,
+        wholesalePrice: Number(body.wholesalePrice),
+        wholesaleQty: Number(body.wholesaleQty),
+        productStock: Number(body.productStock),
+        qty: Number(body.qty),
+      },
     });
 
-    return NextResponse.json({
-      message: "Product deleted",
-    });
-  } catch {
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
-      { message: "Failed to delete product" },
+      { message: "Failed to update product" },
       { status: 500 }
     );
   }

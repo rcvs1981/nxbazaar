@@ -1,41 +1,39 @@
 "use client";
-import { UploadButton } from "@/lib/uploadthingClient";
 
-interface Props {
+import { UploadButton } from "@/lib/uploadthing";
+
+interface ImageInputProps {
   label: string;
-  imageUrl: string;
+  endpoint:
+    | "categoryImageUploader"
+    | "bannerImageUploader"
+    | "marketLogoUploader"
+    | "multipleProductsUploader"
+    | "subcategoryImageUploader"
+    | "productImageUploader"
+    | "sellerProfileUploader";
   setImageUrl: (url: string) => void;
-  endpoint: "categoryImageUploader" | "productGallery"; // ⭐ ADD THIS
 }
 
 export default function ImageInput({
   label,
-  imageUrl,
-  setImageUrl,
   endpoint,
-}: Props) {
+  setImageUrl,
+}: ImageInputProps) {
   return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium">{label}</label>
+    <div className="space-y-2">
+      <p className="text-sm font-medium">{label}</p>
 
-      <UploadButton
-        endpoint={endpoint}
-        onClientUploadComplete={(res) => {
-          const url = res?.[0]?.ufsUrl;
-          if (url) setImageUrl(url);
-        }}
-        onUploadError={(error: Error) => {
-          alert(`ERROR! ${error.message}`);
-        }}
-      />
+    <UploadButton
+  endpoint="marketLogoUploader"
+  onClientUploadComplete={(res) => {
+    console.log(res)
 
-      {imageUrl && (
-        <img
-          src={imageUrl}
-          alt="uploaded"
-          className="w-32 h-32 object-cover rounded-md border"
-        />
-      )}
+    const url = res?.[0]?.url
+
+    setImageUrl(url)
+  }}
+/>
     </div>
   );
 }

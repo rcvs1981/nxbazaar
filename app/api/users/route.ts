@@ -1,99 +1,100 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { createUserSchema } from "@/lib/validators/user.schema";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
+import db from "@/lib/db";
+import { v4 as uuidv4 } from "uuid";
+import base64url from "base64url";
 
-// ================= CREATE USER =================
+import { createUserSchema } from "@/lib/validators/user";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const validatedData = createUserSchema.parse(body);
+    const parsed = createUserSchema.safeParse(body);
 
-    const existing = await db.user.findUnique({
-      where: { email: validatedData.email },
-    });
-
-    if (existing) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { message: "Email already exists" },
+        {
+          success: false,
+          errors: parsed.error.flatten(),
+        },
         { status: 400 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(
-      validatedData.password,
-      10
-    );
+    const { name, email, password, role, plan } = parsed.data;
 
-    const user = await db.user.create({
+    const existingUser = await db.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `User with email ${email} already exists`,
+        },
+        { status: 409 }
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const rawToken = uuidv4();
+    const token = base64url.encode(rawToken);
+
+    const newUser = await db.user.create({
       data: {
-        name: validatedData.name,
-        email: validatedData.email,
+        name,
+        email,
         password: hashedPassword,
-        role: validatedData.role || "CUSTOMER",
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
+        role,
+        plan,
+        verificationToken: token,
       },
     });
 
-    return NextResponse.json(user, { status: 201 });
-  } catch (error: any) {
     return NextResponse.json(
-      { message: error.message || "Failed to create user" },
+      {
+        success: true,
+        data: newUser,
+        message: "User created successfully",
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("CREATE USER ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal server error",
+      },
       { status: 500 }
     );
   }
 }
 
-// ================= GET ALL USERS =================
 export async function GET() {
   try {
     const users = await db.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        sellerProfile: true,
-        userProfile: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return NextResponse.json(users);
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Failed to fetch users" },
-      { status: 500 }
-    );
-  }
-}
-
-// ================= BULK DELETE =================
-export async function DELETE(req: Request) {
-  try {
-    const body = await req.json();
-    const { ids } = body;
-
-    await db.user.deleteMany({
-      where: {
-        id: { in: ids },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
     return NextResponse.json({
-      message: "Selected users deleted",
+      success: true,
+      data: users,
     });
   } catch (error) {
+    console.error("FETCH USERS ERROR:", error);
+
     return NextResponse.json(
-      { message: "Bulk delete failed" },
+      {
+        success: false,
+        message: "Failed to fetch users",
+      },
       { status: 500 }
     );
   }

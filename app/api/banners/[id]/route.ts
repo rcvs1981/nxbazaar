@@ -56,16 +56,27 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const existingBanner = await db.banner.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingBanner) {
+      return NextResponse.json(
+        { message: "Banner not found" },
+        { status: 404 }
+      );
+    }
+
     await db.banner.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({
-      message: "Banner deleted",
+      message: "Banner deleted successfully",
     });
-  } catch {
+  } catch (error: any) {
     return NextResponse.json(
-      { message: "Failed to delete banner" },
+      { message: error.message || "Failed to delete banner" },
       { status: 500 }
     );
   }

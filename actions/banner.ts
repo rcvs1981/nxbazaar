@@ -1,0 +1,99 @@
+"use server"
+
+import { db } from "@/lib/db"
+import { revalidatePath } from "next/cache"
+import { bannerSchema } from "@/lib/validators/banner.schema"
+import { BannerResponse, BannersResponse } from "@/types/banner"
+
+export async function createBanner(data: unknown): Promise<BannerResponse> {
+  try {
+    const parsed = bannerSchema.safeParse(data)
+
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors.title?.[0] || "Validation failed" }
+    }
+
+    const banner = await db.banner.create({
+      data: parsed.data,
+    })
+
+    revalidatePath("/dashboard/banners")
+    return { success: true, data: banner }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to create banner" }
+  }
+}
+
+export async function updateBanner(id: string, data: unknown): Promise<BannerResponse> {
+  try {
+    const parsed = bannerSchema.safeParse(data)
+
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors.title?.[0] || "Validation failed" }
+    }
+
+    const banner = await db.banner.update({
+      where: { id },
+      data: parsed.data,
+    })
+
+    revalidatePath("/dashboard/banners")
+    return { success: true, data: banner }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to update banner" }
+  }
+}
+
+export async function deleteBanner(id: string): Promise<BannerResponse> {
+  try {
+    await db.banner.delete({
+      where: { id },
+    })
+
+    revalidatePath("/dashboard/banners")
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete banner" }
+  }
+}
+
+export async function deleteMultipleBanners(ids: string[]): Promise<BannerResponse> {
+  try {
+    await db.banner.deleteMany({
+      where: { id: { in: ids } },
+    })
+
+    revalidatePath("/dashboard/banners")
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete banners" }
+  }
+}
+
+export async function getBanners(activeOnly?: boolean): Promise<BannersResponse> {
+  try {
+    const banners = await db.banner.findMany({
+      where: activeOnly ? { isActive: true } : undefined,
+      orderBy: { createdAt: 'desc' }
+    })
+    return { success: true, data: banners }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch banners" }
+  }
+}
+
+export async function getBanner(id: string): Promise<BannerResponse> {
+  try {
+    const banner = await db.banner.findUnique({
+      where: { id },
+    })
+
+    if (!banner) {
+      return { success: false, error: "Banner not found" }
+    }
+
+    return { success: true, data: banner }
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch banner" }
+  }
+}
