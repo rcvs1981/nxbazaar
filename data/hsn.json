@@ -1,0 +1,30 @@
+[
+{
+"hsnCode":"0101",
+"description":"Live horses, asses, mules and hinnies",
+"cgst":6,
+"sgst":6,
+"igst":12
+},
+{
+"hsnCode":"0102",
+"description":"Live bovine animals",
+"cgst":0,
+"sgst":0,
+"igst":0
+},
+{
+"hsnCode":"0103",
+"description":"Live swine",
+"cgst":2.5,
+"sgst":2.5,
+"igst":5
+},
+{
+"hsnCode":"0201",
+"description":"Meat of bovine animals",
+"cgst":6,
+"sgst":6,
+"igst":12
+}
+]

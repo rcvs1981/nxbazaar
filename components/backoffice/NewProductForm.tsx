@@ -1,70 +1,51 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-
+import { zodResolver } from "@hookform/resolvers/zod";
 import TextInput from "@/components/FormInputs/TextInput";
 import TextareaInput from "@/components/FormInputs/TextAreaInput";
 import SelectInput from "@/components/FormInputs/SelectInput";
 import ToggleInput from "@/components/FormInputs/ToggleInput";
-import SubmitButton from "@/components/FormInputs/SubmitButton";
 import ArrayItemsInput from "@/components/FormInputs/ArrayItemsInput";
 import MultipleImageInput from "@/components/FormInputs/MultipleImageInput";
-
+import SubmitButton from "@/components/FormInputs/SubmitButton";
+import { productSchema, ProductInput } from "@/lib/validators/productSchema.ts";
 import { generateSlug } from "@/lib/generateSlug";
-import { generateUserCode } from "@/lib/generateUserCode";
 import { generateBarcode } from "@/lib/generateBarcode";
-
-import { createProduct, updateProduct } from "@/actions/products";
-
-type ProductFormValues = {
-  title: string;
-  sku: string;
-  barcode?: string;
-  productPrice: number;
-  salePrice: number;
-  gstRate: number;
-  productStock: number;
-  unit: string;
-  categoryId: string;
-  description?: string;
-  wholesalePrice?: number;
-  wholesaleQty?: number;
-  isWholesale: boolean;
-  isActive: boolean;
-};
+import { useCreateProduct, useUpdateProduct } from "@/hooks/useProducts";
+import { SelectOption } from "@/types/product";
 
 type Props = {
-  categories: { id: string; title: string }[];
-  updateData?: Partial<ProductFormValues> & {
-    id?: string;
-    tags?: string[];
-    productImages?: string[];
-  };
+  categories: SelectOption[];
+  sellers: SelectOption[];
+  updateData?: Partial<ProductInput> & { id?: string };
 };
 
 export default function NewProductForm({
   categories,
+  sellers,
   updateData = {},
 }: Props) {
+
   const router = useRouter();
 
-  const id = updateData?.id ?? "";
-  const initialTags = updateData?.tags ?? [];
-  const initialImages = updateData?.productImages ?? [];
+  const [tags, setTags] = useState<string[]>(updateData.tags ?? []);
+  const [productImages, setProductImages] = useState<string[]>(
+    updateData.productImages ?? []
+  );
 
-  const [tags, setTags] = useState<string[]>(initialTags);
-  const [productImages, setProductImages] = useState<string[]>(initialImages);
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
 
   const {
     register,
-    reset,
-    watch,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<ProductFormValues>({
+  } = useForm<ProductInput>({
+    resolver: zodResolver(productSchema),
     defaultValues: {
       isActive: true,
       isWholesale: false,
@@ -74,48 +55,41 @@ export default function NewProductForm({
 
   const isWholesale = watch("isWholesale");
 
-  const mutation = useMutation({
-    mutationFn: async (data: ProductFormValues) => {
-      if (id) {
-        return updateProduct(id, data);
-      }
-      return createProduct(data);
-    },
-    onSuccess: () => {
-      router.push("/dashboard/products");
-      router.refresh();
-      reset();
-      setTags([]);
-      setProductImages([]);
-    },
-  });
+  function onSubmit(data: ProductInput) {
 
-  async function onSubmit(data: ProductFormValues) {
-    const slug = generateSlug(data.title);
-    const productCode = generateUserCode("PRD", data.title);
-
-    const barcode = data.barcode || generateBarcode();
-
-    const payload = {
+    const payload: ProductInput = {
       ...data,
-      barcode,
-      slug,
-      productCode,
+      slug: generateSlug(data.title),
+      barcode: data.barcode ?? generateBarcode(),
       tags,
       productImages,
-      qty: 1,
     };
 
-    mutation.mutate(payload);
+    if (updateData?.id) {
+
+      updateProduct.mutate(
+        { ...payload, id: updateData.id },
+        {
+          onSuccess: () => router.push("/dashboard/products"),
+        }
+      );
+
+    } else {
+
+      createProduct.mutate(payload, {
+        onSuccess: () => router.push("/dashboard/products"),
+      });
+
+    }
   }
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-  className="w-full max-w-5xl p-6 bg-gradient-to-r from-orange-50 to-orange-100 
-dark:from-orange-900 dark:to-orange-800 
-rounded-lg shadow ">
-     <div className="grid gap-4  sm:gap-6">
+      className="max-w-4xl mx-auto p-6  rounded-lg shadow"
+    >
+
+      <div className="grid grid-cols-2 gap-4">
 
         <TextInput
           label="Product Title"
@@ -123,13 +97,12 @@ rounded-lg shadow ">
           register={register}
           errors={errors}
         />
- <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+
         <TextInput
           label="SKU"
           name="sku"
           register={register}
           errors={errors}
-          className="grid gap-4 sm:grid-cols-2 sm:gap-6"
         />
 
         <TextInput
@@ -138,8 +111,7 @@ rounded-lg shadow ">
           register={register}
           errors={errors}
         />
-        </div>
-         <div className="grid gap-4 sm:grid-cols-5 sm:gap-6">
+
         <TextInput
           label="Product Price"
           name="productPrice"
@@ -157,15 +129,7 @@ rounded-lg shadow ">
         />
 
         <TextInput
-          label="GST Rate (%)"
-          name="gstRate"
-          type="number"
-          register={register}
-          errors={errors}
-        />
-
-        <TextInput
-          label="Product Stock"
+          label="Stock"
           name="productStock"
           type="number"
           register={register}
@@ -173,13 +137,12 @@ rounded-lg shadow ">
         />
 
         <TextInput
-          label="Unit (Kg, Gram etc)"
+          label="Unit"
           name="unit"
           register={register}
           errors={errors}
         />
-</div>
-<div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+
         <SelectInput
           label="Category"
           name="categoryId"
@@ -187,13 +150,33 @@ rounded-lg shadow ">
           errors={errors}
           options={categories}
         />
-</div>
-<div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+
+        <SelectInput
+          label="Seller"
+          name="sellerId"
+          register={register}
+          errors={errors}
+          options={sellers}
+        />
+
+        <TextInput
+          label="HSN Code"
+          name="hsnCodeId"
+          register={register}
+          errors={errors}
+        />
+
+        <TextInput
+          label="GST Rate"
+          name="gstRate"
+          type="number"
+          register={register}
+          errors={errors}
+        />
+
         <ToggleInput
-          label="Supports Wholesale"
+          label="Wholesale"
           name="isWholesale"
-          trueTitle="Yes"
-          falseTitle="No"
           register={register}
         />
 
@@ -216,7 +199,7 @@ rounded-lg shadow ">
             />
           </>
         )}
-</div>
+
         <MultipleImageInput
           imageUrls={productImages}
           setImageUrls={setProductImages}
@@ -224,37 +207,33 @@ rounded-lg shadow ">
           label="Product Images"
         />
 
-       
-
-        <TextareaInput
-          label="Product Description"
-          name="description"
-          register={register}
-          errors={errors}
-        />
-         <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
-         <ArrayItemsInput
+        <ArrayItemsInput
           items={tags}
           setItems={setTags}
           itemTitle="Tag"
         />
+
+        <TextareaInput
+          label="Description"
+          name="description"
+          register={register}
+          errors={errors}
+        />
+
         <ToggleInput
           label="Publish Product"
           name="isActive"
-          trueTitle="Active"
-          falseTitle="Draft"
           register={register}
         />
-        </div>
+
       </div>
 
       <SubmitButton
-        isLoading={mutation.isPending}
-        buttonTitle={id ? "Update Product" : "Create Product"}
-        loadingButtonTitle={
-          id ? "Updating Product..." : "Creating Product..."
-        }
+        isLoading={createProduct.isPending || updateProduct.isPending}
+        buttonTitle={updateData?.id ? "Update Product" : "Create Product"}
+        loadingButtonTitle="Please wait..."
       />
+
     </form>
   );
 }

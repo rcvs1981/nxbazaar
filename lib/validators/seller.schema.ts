@@ -3,8 +3,8 @@ import { z } from "zod";
 export const sellerSchema = z.object({
   code: z.string(),
 
-  name: z.string().min(3),
-  email: z.string().email(),
+   name: z.string().min(3).optional(),
+  email: z.string().email().optional(),
   phone: z.string(),
 
   contactPerson: z.string().optional(),

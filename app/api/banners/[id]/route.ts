@@ -5,20 +5,24 @@ import { bannerSchema } from "@/lib/validators/banner.schema";
 // ================= GET ONE =================
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const banner = await db.banner.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
-    if (!banner)
+    if (!banner) {
       return NextResponse.json(
         { message: "Banner not found" },
         { status: 404 }
       );
+    }
 
     return NextResponse.json(banner);
+
   } catch {
     return NextResponse.json(
       { message: "Failed to fetch banner" },
@@ -30,18 +34,21 @@ export async function GET(
 // ================= UPDATE =================
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const body = await req.json();
     const validated = bannerSchema.parse(body);
 
     const updated = await db.banner.update({
-      where: { id: params.id },
+      where: { id },
       data: validated,
     });
 
     return NextResponse.json(updated);
+
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message || "Failed to update banner" },
@@ -53,11 +60,13 @@ export async function PUT(
 // ================= DELETE =================
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const existingBanner = await db.banner.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingBanner) {
@@ -68,15 +77,16 @@ export async function DELETE(
     }
 
     await db.banner.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({
       message: "Banner deleted successfully",
     });
-  } catch (error: any) {
+
+  } catch {
     return NextResponse.json(
-      { message: error.message || "Failed to delete banner" },
+      { message: "Failed to delete banner" },
       { status: 500 }
     );
   }

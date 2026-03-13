@@ -19,18 +19,19 @@ interface BannerFormProps {
 }
 
 export default function BannerForm({ updateData }: BannerFormProps) {
+
   const router = useRouter()
 
   const createMutation = useCreateBanner()
   const updateMutation = useUpdateBanner()
 
   const [imageUrl, setImageUrl] = useState(updateData?.imageUrl || "")
-  const [loading, setLoading] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
     reset,
   } = useForm<BannerInput>({
     resolver: zodResolver(bannerSchema),
@@ -43,12 +44,21 @@ export default function BannerForm({ updateData }: BannerFormProps) {
   })
 
   const onSubmit = async (data: BannerInput) => {
-    setLoading(true)
+
+    if (!imageUrl) {
+      toast.error("Banner image is required")
+      return
+    }
+
+    const bannerData: BannerInput = {
+      ...data,
+      imageUrl,
+    }
 
     try {
-      const bannerData = { ...data, imageUrl }
 
       if (updateData?.id) {
+
         const result = await updateMutation.mutateAsync({
           id: updateData.id,
           ...bannerData,
@@ -58,24 +68,34 @@ export default function BannerForm({ updateData }: BannerFormProps) {
           toast.success("Banner updated successfully")
           router.push("/dashboard/banners")
         } else {
-          toast.error(result.error || "Failed to update banner")
+          toast.error(result.error ?? "Failed to update banner")
         }
+
       } else {
+
         const result = await createMutation.mutateAsync(bannerData)
 
         if (result.success) {
           toast.success("Banner created successfully")
           reset()
           setImageUrl("")
+          router.push("/dashboard/banners")
         } else {
-          toast.error(result.error || "Failed to create banner")
+          toast.error(result.error ?? "Failed to create banner")
         }
+
       }
-    } catch (error: any) {
-      toast.error(error.message || "Something went wrong")
-    } finally {
-      setLoading(false)
+
+    } catch (error: unknown) {
+
+      if (error instanceof Error) {
+        toast.error(error.message)
+      } else {
+        toast.error("Something went wrong")
+      }
+
     }
+
   }
 
   return (
@@ -83,13 +103,14 @@ export default function BannerForm({ updateData }: BannerFormProps) {
       onSubmit={handleSubmit(onSubmit)}
       className="w-full max-w-4xl p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-6 md:p-8 dark:bg-gray-800 dark:border-gray-700 mx-auto my-3"
     >
+
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+
         <TextInput
           label="Banner Title"
           name="title"
           register={register}
           errors={errors}
-          className="w-full"
         />
 
         <TextInput
@@ -98,16 +119,19 @@ export default function BannerForm({ updateData }: BannerFormProps) {
           type="url"
           register={register}
           errors={errors}
-          className="w-full"
         />
 
         <div className="sm:col-span-2">
+
           <ImageInput
-            imageUrl={imageUrl}
-            setImageUrl={setImageUrl}
-            endpoint="bannerImageUploader"
             label="Banner Image"
+            imageUrl={imageUrl}
+            setImageUrl={(url: string) => {
+              setImageUrl(url)
+              setValue("imageUrl", url)
+            }}
           />
+
         </div>
 
         <ToggleInput
@@ -117,15 +141,15 @@ export default function BannerForm({ updateData }: BannerFormProps) {
           falseTitle="Draft"
           register={register}
         />
+
       </div>
 
       <SubmitButton
-        isLoading={loading}
+        isLoading={createMutation.isPending || updateMutation.isPending}
         buttonTitle={updateData?.id ? "Update Banner" : "Create Banner"}
-        loadingButtonTitle={`${
-          updateData?.id ? "Updating" : "Creating"
-        } Banner please wait...`}
+        loadingButtonTitle={`${updateData?.id ? "Updating" : "Creating"} Banner please wait...`}
       />
+
     </form>
   )
 }

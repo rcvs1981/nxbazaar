@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate:hsn": "ts-node scripts/generate-hsn.ts",
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start"
@@ -19,6 +20,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@uploadthing/react": "^7.3.3",
     "axios": "^1.13.5",
+    "base64url": "^3.0.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "bwip-js": "^4.8.0",
@@ -26,10 +28,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.19",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
+    "next-auth": "5.0.0-beta.30",
     "next-intl": "^4.8.2",
     "next-themes": "^0.4.6",
+    "nodemailer": "^8.0.2",
     "pg": "^8.18.0",
     "pino": "^10.3.1",
     "qrcode": "^1.5.4",
@@ -49,11 +54,12 @@
     "sweetalert2": "^11.26.18",
     "tailwind-merge": "^3.4.0",
     "uploadthing": "^7.7.4",
+    "uuid": "^13.0.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "beta",
     "@types/chart.js": "^4.0.1",
     "@types/node": "^20",
     "@types/pg": "^8.16.0",
@@ -65,6 +71,7 @@
     "prisma": "^7.4.1",
     "shadcn": "^3.8.4",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5"
   }

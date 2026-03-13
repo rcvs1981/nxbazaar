@@ -50,10 +50,10 @@ export default function Sidebar({ showSidebar, setShowSidebar }: SidebarProps) {
     { title: "Sellers", icon: UserSquare2, href: "/dashboard/sellers" },
     { title: "Orders", icon: Truck, href: "/dashboard/orders" },
     { title: "Sales", icon: Truck, href: "/dashboard/sales" },
-    { title: "Our Staff", icon: User, href: "/dashboard/staff" },
-    { title: "Community", icon: Building2, href: "/dashboard/community" },
+   
+   
     { title: "Wallet", icon: CircleDollarSign, href: "/dashboard/wallet" },
-    { title: "Farmer Support", icon: HeartHandshake, href: "/dashboard/farmer-support" },
+    { title: "Seller Support", icon: HeartHandshake, href: "/dashboard/seller-support" },
     { title: "Settings", icon: LayoutGrid, href: "/dashboard/settings" },
     { title: "Online Store", icon: ExternalLink, href: "/" },
   ];

@@ -1,28 +1,21 @@
 import { z } from "zod";
 
-export const createUserSchema = z.object({
-  name: z.string().optional(),
-
-  email: z
-    .string()
-    .email("Invalid email format"),
-
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters"),
-
-  role: z.enum(["ADMIN", "SELLER", "CUSTOMER"]).optional(),
-});
-
-export const updateUserSchema = z.object({
-  name: z.string().optional(),
-  role: z.enum(["ADMIN", "SELLER", "CUSTOMER"]).optional(),
-  password: z.string().min(6).optional(),
-});
-
-export const loginSchema = z.object({
+export const registerSchema = z.object({
+  name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
+  role: z.enum(["USER", "SELLER", "ADMIN"]),
+  plan: z.string().optional()
 });
 
-export type CreateUserInput = z.infer<typeof createUserSchema>;
+export const resetPasswordSchema = z.object({
+  id: z.string(),
+  password: z.string().min(6)
+});
+
+export const verifyUserSchema = z.object({
+  id: z.string(),
+  token: z.string()
+});
+
+export type RegisterInput = z.infer<typeof registerSchema>;

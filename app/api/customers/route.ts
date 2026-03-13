@@ -1,0 +1,25 @@
+import {db} from "@/lib/db";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  try {
+    const customers = await db.user.findMany({
+      where: {
+        role: "USER",
+      },
+      include: {
+        profile: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(customers);
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Failed to fetch customers" },
+      { status: 500 }
+    );
+  }
+}

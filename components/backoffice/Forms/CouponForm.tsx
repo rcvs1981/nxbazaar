@@ -4,13 +4,10 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-
 import toast from "react-hot-toast"
-
 import TextInput from "@/components/FormInputs/TextInput"
 import ToggleInput from "@/components/FormInputs/ToggleInput"
 import SubmitButton from "@/components/FormInputs/SubmitButton"
-
 import { couponSchema } from "@/lib/validators/coupon.schema"
 import { useCreateCoupon, useUpdateCoupon } from "@/hooks/useCouponMutation"
 import type { CreateCouponInput, UpdateCouponInput } from "@/types/coupon"

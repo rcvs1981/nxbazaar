@@ -55,22 +55,6 @@ export async function GET(request: Request, { params }: Params) {
 export async function DELETE(request: Request, { params }: Params) {
   try {
 
-    const existingUser = await db.user.findUnique({
-      where: {
-        id: params.id,
-      },
-    });
-
-    if (!existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
-      );
-    }
-
     await db.$transaction([
       db.sellerProfile.deleteMany({
         where: {
@@ -110,24 +94,7 @@ export async function PUT(request: Request, { params }: Params) {
   try {
 
     const body = await request.json();
-
     const { status, emailVerified } = body;
-
-    const existingUser = await db.user.findUnique({
-      where: {
-        id: params.id,
-      },
-    });
-
-    if (!existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
-      );
-    }
 
     const updatedUser = await db.user.update({
       where: {
@@ -157,22 +124,4 @@ export async function PUT(request: Request, { params }: Params) {
       { status: 500 }
     );
   }
-}
-
-"use server";
-
-
-
-export async function deleteSeller(id: string) {
-
-  await db.$transaction([
-    db.sellerProfile.deleteMany({
-      where: { userId: id },
-    }),
-    db.user.delete({
-      where: { id },
-    }),
-  ]);
-
-  return { success: true };
 }

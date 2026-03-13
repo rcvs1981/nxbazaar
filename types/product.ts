@@ -1,56 +1,58 @@
+export interface ProductRequest {
+  id: string
 
+  title: string
+  slug: string
+  description?: string
 
-export interface Product {
-  id: string;
-  title: string;
-  slug: string;
-  imageUrl?: string;
-  productImages?: string[];
-  description?: string;
-  isActive: boolean;
-  isWholesale: boolean;
-  
-  sku?: string;
-  barcode?: string;
-  qrCode?: string;
-  productCode?: string;
-  unit?: string;
-  
-  productPrice: number;
-  salePrice: number;
-  wholesalePrice?: number;
-  wholesaleQty?: number;
-  
-  productStock?: number;
-  tags?: string[];
-  
-  gstId?: string;
-  hsnId?: string;
-  categoryId: string;
-  subCategoryId?: string;
-  userId: string;
-  
-  createdAt: string;
-  updatedAt: string;
+  barcode?: string
+  sku?: string
+  productCode?: string
+
+  categoryId: string
+  sellerId: string
+
+  productPrice: number
+  salePrice: number
+
+  wholesalePrice?: number
+  wholesaleQty?: number
+
+  productStock: number
+  qty?: number
+
+  unit?: string
+  tags: string[]
+
+  imageUrl?: string
+  productImages: string[]
+
+  isActive: boolean
+  isWholesale: boolean
+
+  hsnCodeId?: string
+
+  createdAt: Date
+  updatedAt: Date
 }
 
-export interface ProductResponse {
-  success: boolean;
-  data?: Product;
-  error?: string;
-  message?: string;
-}
 
-export interface ProductsResponse {
-  success: boolean;
-  data?: Product[];
-  error?: string;
-  message?: string;
-}
+/* CREATE PRODUCT */
 
-export interface ProductsDeleteResponse {
-  success: boolean;
-  message?: string;
-  error?: string;
-  deletedCount?: number;
+export type CreateProductInput = Omit<
+  ProductRequest,
+  "id" | "createdAt" | "updatedAt"
+>
+
+
+/* UPDATE PRODUCT */
+
+export type UpdateProductInput = Partial<CreateProductInput>
+
+
+/* SELECT OPTIONS */
+
+export type SelectOption = {
+  label: string
+  value: string
 }

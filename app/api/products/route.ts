@@ -1,90 +1,86 @@
-import {db} from "@/lib/db"
+import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
-import { CreateProductBody } from "@/types/product"
+import { Prisma } from "@prisma/client"
+import { productSchema } from "@/lib/validators/productSchema"
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<Response> {
+
   try {
-    const body: CreateProductBody = await request.json()
 
-    const {
-      barcode,
-      qrCode,
-      categoryId,
-      description,
-      farmerId,
-      isActive,
-      isWholesale,
-      productCode,
-      productPrice,
-      salePrice,
-      sku,
-      slug,
-      tags,
-      title,
-      unit,
-      wholesalePrice,
-      wholesaleQty,
-      productStock,
-      qty,
-      productImages,
-      gstRate
-    } = body
+    const json = await request.json()
+
+    const body = productSchema.parse(json)
 
     const existingProduct = await db.product.findUnique({
-      where: { slug }
+      where: { slug: body.slug }
     })
 
     if (existingProduct) {
+
       return NextResponse.json(
-        {
-          data: null,
-          message: `Product (${title}) already exists`
-        },
+        { message: `Product (${body.title}) already exists` },
         { status: 409 }
       )
     }
 
-    const newProduct = await db.product.create({
+    const product = await db.product.create({
+
       data: {
-        barcode,
-        qrCode,
-        categoryId,
-        description,
-        userId: farmerId,
-        productImages,
-        imageUrl: productImages?.[0] ?? null,
 
-        isActive,
-        isWholesale,
+        barcode: body.barcode,
 
-        productCode,
-        sku,
-        slug,
-        tags,
-        title,
-        unit,
+        categoryId: body.categoryId,
 
-        gstRate,
+        description: body.description,
 
-        productPrice,
-        salePrice,
-        wholesalePrice,
+        userId: body.sellerId,
 
-        wholesaleQty,
-        productStock,
-        qty
+        productImages: body.productImages,
+
+        imageUrl: body.productImages?.[0] ?? null,
+
+        isActive: body.isActive ?? true,
+
+        isWholesale: body.isWholesale ?? false,
+
+        productCode: body.productCode,
+
+        productPrice: body.productPrice,
+
+        salePrice: body.salePrice,
+
+        sku: body.sku,
+
+        slug: body.slug,
+
+        tags: body.tags,
+
+        title: body.title,
+
+        unit: body.unit,
+
+        wholesalePrice: body.wholesalePrice ?? null,
+
+        wholesaleQty: body.wholesaleQty ?? null,
+
+        productStock: body.productStock,
+
+        qty: body.qty ?? null,
+
+        hsnCodeId: body.hsnCodeId
+
       }
+
     })
 
-    return NextResponse.json(newProduct)
+    return NextResponse.json(product)
 
   } catch (error) {
+
     console.error(error)
 
     return NextResponse.json(
-      {
-        message: "Failed to create Product"
-      },
+      { message: "Failed to create Product" },
       { status: 500 }
     )
   }

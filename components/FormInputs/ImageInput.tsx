@@ -1,39 +1,48 @@
 "use client";
 
-import { UploadButton } from "@/lib/uploadthing";
+import Image from "next/image";
+import { UploadButton } from "@uploadthing/react";
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
-interface ImageInputProps {
+type Props = {
   label: string;
-  endpoint:
-    | "categoryImageUploader"
-    | "bannerImageUploader"
-    | "marketLogoUploader"
-    | "multipleProductsUploader"
-    | "subcategoryImageUploader"
-    | "productImageUploader"
-    | "sellerProfileUploader";
+  imageUrl: string;
   setImageUrl: (url: string) => void;
-}
+};
 
 export default function ImageInput({
   label,
-  endpoint,
+  imageUrl,
   setImageUrl,
-}: ImageInputProps) {
+}: Props) {
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{label}</p>
+    <div className="space-y-3">
 
-    <UploadButton
-  endpoint="marketLogoUploader"
-  onClientUploadComplete={(res) => {
-    console.log(res)
+      <label className="text-sm font-medium">{label}</label>
 
-    const url = res?.[0]?.url
+      <UploadButton<OurFileRouter>
+        endpoint="bannerImageUploader"
+        onClientUploadComplete={(res) => {
+          if (res && res.length > 0) {
+            setImageUrl(res[0].url);
+          }
+        }}
+        onUploadError={(error: Error) => {
+          alert(`Upload failed: ${error.message}`);
+        }}
+      />
 
-    setImageUrl(url)
-  }}
-/>
+      {imageUrl && (
+        <div className="relative w-40 h-40 border rounded-md">
+          <Image
+            src={imageUrl}
+            alt="preview"
+            fill
+            className="object-cover rounded-md"
+          />
+        </div>
+      )}
+
     </div>
   );
 }

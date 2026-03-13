@@ -1,20 +1,36 @@
-"use server";
+"use server"
 
-import { db } from "@/lib/db";
-import { sellerSchema } from "@/lib/validators/seller.schema";
-import { UserRole } from "@prisma/client";
+import { db } from "@/lib/db"
+import { sellerSchema } from "@/lib/validators/seller.schema"
+import { UserRole } from "@prisma/client"
+
+/* ---------------- CREATE SELLER ---------------- */
+
 export async function createSeller(data: unknown) {
 
-  const sellerData = sellerSchema.parse(data);
+  const sellerData = sellerSchema.parse(data)
 
-  const seller = await db.sellerProfile.create({
-    data: sellerData,
-  });
+  const seller = await db.$transaction(async (tx) => {
 
-  return seller;
+    await tx.user.update({
+      where: { id: sellerData.userId },
+      data: {
+        role: UserRole.SELLER,
+        emailVerified: true,
+      },
+    })
+
+    const profile = await tx.sellerProfile.create({
+      data: sellerData,
+    })
+
+    return profile
+  })
+
+  return seller
 }
 
-
+/* ---------------- GET SELLERS ---------------- */
 
 export async function getSellers() {
 
@@ -28,7 +44,23 @@ export async function getSellers() {
     orderBy: {
       createdAt: "desc",
     },
-  });
+  })
 
-  return sellers;
+  return sellers
+}
+
+/* ---------------- DELETE SELLER ---------------- */
+
+export async function deleteSeller(id: string) {
+
+  await db.$transaction([
+    db.sellerProfile.deleteMany({
+      where: { userId: id },
+    }),
+    db.user.delete({
+      where: { id },
+    }),
+  ])
+
+  return { success: true }
 }

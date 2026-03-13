@@ -1,32 +1,19 @@
-import FormHeader from "@/components/backoffice/FormHeader";
+import { getProductOptions } from "@/actions/getOptions";
 import NewProductForm from "@/components/backoffice/NewProductForm";
-import { getCategories } from "@/actions/category";
-import React from "react";
 
-type Category = {
-  id: string;
-  title: string;
-};
+export default async function NewProductPage(){
 
-export default async function NewProduct() {
-  const categoriesData = await getCategories();
+ const { categories, sellers} = await getProductOptions();
 
-  if (!categoriesData) {
-    return <div>Loading...</div>;
-  }
+ return(
 
-  const categories: Category[] = (categoriesData as Category[]).map(
-    (category) => ({
-      id: category.id,
-      title: category.title,
-    })
-  );
+  <NewProductForm
+   categories={categories}
+   sellers={sellers}
+   
+   
+  />
 
-  return (
-    <div>
-      <FormHeader title="New Product" />
+ )
 
-      <NewProductForm categories={categories} />
-    </div>
-  );
 }

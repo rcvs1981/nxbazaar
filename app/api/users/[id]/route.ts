@@ -1,43 +1,29 @@
-import { NextResponse } from "next/server";
 import {db} from "@/lib/db";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
-const paramsSchema = z.object({
-  id: z.string().min(1),
-});
+const idSchema = z.string().min(1);
 
-type RouteContext = {
+interface RouteParams {
   params: {
     id: string;
   };
-};
+}
 
 // GET USER
 export async function GET(
-  _req: Request,
-  { params }: RouteContext
+  req: Request,
+  { params }: RouteParams
 ) {
   try {
-    const parsed = paramsSchema.safeParse(params);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid user id",
-        },
-        { status: 400 }
-      );
-    }
-
-    const { id } = parsed.data;
+    const id = idSchema.parse(params.id);
 
     const user = await db.user.findUnique({
       where: { id },
       select: {
         id: true,
-        email: true,
         name: true,
+        email: true,
         role: true,
         createdAt: true,
         profile: true,
@@ -46,26 +32,18 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
+        { message: "User not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: user,
-    });
+    return NextResponse.json(user);
+
   } catch (error) {
-    console.error("GET USER ERROR:", error);
+    console.error(error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch user",
-      },
+      { message: "Failed to fetch user" },
       { status: 500 }
     );
   }
@@ -73,32 +51,20 @@ export async function GET(
 
 // DELETE USER
 export async function DELETE(
-  _req: Request,
-  { params }: RouteContext
+  req: Request,
+  { params }: RouteParams
 ) {
   try {
-    const parsed = paramsSchema.safeParse(params);
+    const id = idSchema.parse(params.id);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid user id",
-        },
-        { status: 400 }
-      );
-    }
-
-    const { id } = parsed.data;
-
-    const existingUser = await db.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id },
     });
 
-    if (!existingUser) {
+    if (!user) {
       return NextResponse.json(
         {
-          success: false,
+          data: null,
           message: "User not found",
         },
         { status: 404 }
@@ -110,18 +76,15 @@ export async function DELETE(
     });
 
     return NextResponse.json({
-      success: true,
       data: deletedUser,
       message: "User deleted successfully",
     });
+
   } catch (error) {
-    console.error("DELETE USER ERROR:", error);
+    console.error(error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to delete user",
-      },
+      { message: "Failed to delete user" },
       { status: 500 }
     );
   }
