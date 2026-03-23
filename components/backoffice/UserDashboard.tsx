@@ -1,12 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import React from "react";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export function userDashboard() {
-  return useQuery({
-    queryKey: ["dashboard"],
-    queryFn: async () => {
-      const res = await axios.get("/api/dashboard");
-      return res.data;
-    },
-  });
+export default async function UserDashboard() {
+  const session = await auth();
+
+  // Not logged in
+  if (!session) {
+    redirect("/login");
+  }
+
+  // Role protection
+  if (session.user.role !== "USER") {
+    redirect("/");
+  }
+
+  return (
+    <div>
+      <h2>Welcome {session.user.name}</h2>
+      <p>Email: {session.user.email}</p>
+      <p>Role: {session.user.role}</p>
+    </div>
+  );
 }

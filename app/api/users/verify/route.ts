@@ -1,64 +1,19 @@
-import {db} from "@/lib/db";
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyEmailAction } from "@/actions/users/verify-email";
 
-const verifyUserSchema = z.object({
-  id: z.string(),
-  token: z.string(),
-});
-
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
-
     const body = await req.json();
 
-    const { id, token } = verifyUserSchema.parse(body);
+    const result = await verifyEmailAction(body);
 
-    const user = await db.user.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          data: null,
-          message: "User not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    if (user.verificationToken !== token) {
-      return NextResponse.json(
-        {
-          message: "Invalid verification token",
-        },
-        { status: 400 }
-      );
-    }
-
-    const updatedUser = await db.user.update({
-      where: { id },
-      data: {
-        emailVerified: true,
-        verificationToken: null,
-        verificationRequestCount:
-          (user.verificationRequestCount ?? 0) + 1,
-      },
-    });
-
-    return NextResponse.json(updatedUser);
-
+    return NextResponse.json(result);
   } catch (error) {
-
-    console.error(error);
-
     return NextResponse.json(
       {
         message: "Failed to update user",
       },
       { status: 500 }
     );
-
   }
 }

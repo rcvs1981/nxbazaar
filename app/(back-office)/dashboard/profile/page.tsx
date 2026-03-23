@@ -1,9 +1,17 @@
-import React from "react";
+import { auth } from "@/lib/auth";
 
-export default async function page() {
+export default async function Page() {
+  const session = await auth();
+
+  if (!session) {
+    return <div>Please login</div>;
+  }
+
+  const { user } = session;
+
   return (
     <div>
-      <h2>Welcome User</h2>
+      <h2>Welcome {user?.name}</h2>
     </div>
   );
 }

@@ -4,10 +4,13 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { loginSchema, LoginInput } from "@/lib/validators/loginSchema";
+
+type LoginFormInputs = {
+  email: string;
+  password: string;
+};
 
 export default function LoginForm() {
   const router = useRouter();
@@ -18,11 +21,9 @@ export default function LoginForm() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-  });
+  } = useForm<LoginFormInputs>();
 
-  async function onSubmit(data: LoginInput) {
+  async function onSubmit(data: LoginFormInputs) {
     try {
       setLoading(true);
 
@@ -37,21 +38,21 @@ export default function LoginForm() {
         return;
       }
 
-      toast.success("Login Successful");
-
+      toast.success("Login successful");
       reset();
 
-      router.push("/");
+      router.push("/"); // redirect after login
       router.refresh();
     } catch (error) {
-      toast.error("Network error");
+      console.error(error);
+      toast.error("Network error occurred");
       setLoading(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-
+      
       {/* Email */}
       <div>
         <label className="block mb-2 text-sm font-medium">
@@ -59,14 +60,14 @@ export default function LoginForm() {
         </label>
 
         <input
-          {...register("email")}
           type="email"
           placeholder="name@company.com"
-          className="input-style"
+          {...register("email", { required: "Email is required" })}
+          className="w-full p-2.5 border rounded-lg"
         />
 
         {errors.email && (
-          <p className="text-red-600 text-sm">
+          <p className="text-red-500 text-sm">
             {errors.email.message}
           </p>
         )}
@@ -79,44 +80,47 @@ export default function LoginForm() {
         </label>
 
         <input
-          {...register("password")}
           type="password"
           placeholder="••••••••"
-          className="input-style"
+          {...register("password", { required: "Password is required" })}
+          className="w-full p-2.5 border rounded-lg"
         />
 
         {errors.password && (
-          <p className="text-red-600 text-sm">
+          <p className="text-red-500 text-sm">
             {errors.password.message}
           </p>
         )}
       </div>
 
       {/* Forgot Password */}
-      <Link
-        href="/forgot-password"
-        className="text-blue-600 text-sm"
-      >
-        Forgot Password
-      </Link>
+      <div className="flex gap-4 items-center">
+        <Link
+          href="/forgot-password"
+          className="text-blue-600 hover:underline text-sm"
+        >
+          Forgot Password
+        </Link>
 
-      {/* Submit */}
-      <button
-        disabled={loading}
-        type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded-lg"
-      >
-        {loading ? "Signing in..." : "Login"}
-      </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-5 py-2.5"
+        >
+          {loading ? "Signing in..." : "Login"}
+        </button>
+      </div>
 
       {/* Register */}
-      <p className="text-sm text-center">
+      <p className="text-sm text-gray-500">
         Don't have an account?{" "}
-        <Link href="/register" className="text-blue-600">
+        <Link
+          href="/register"
+          className="text-blue-600 hover:underline"
+        >
           Sign Up
         </Link>
       </p>
-
     </form>
   );
 }

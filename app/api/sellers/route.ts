@@ -1,48 +1,51 @@
-import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { sellerSchema } from "@/lib/validators/seller.schema"
-import { UserRole } from "@prisma/client"
+import { auth } from "@/lib/auth";
+import {db} from "@/lib/db";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
 
-    const body = await req.json()
-    const sellerData = sellerSchema.parse(body)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    const seller = await db.$transaction(async (tx) => {
+    const body = await req.json();
 
-      const user = await tx.user.findUnique({
-        where: { id: sellerData.userId }
-      })
+    const { storeName, phone } = body;
 
-      if (!user) {
-        throw new Error("User not found")
-      }
+    const user = await db.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+    });
 
-      await tx.user.update({
-        where: { id: sellerData.userId },
-        data: {
-          role: UserRole.SELLER,
-          emailVerified: true
-        }
-      })
+    if (!user) {
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
+    }
 
-      const sellerProfile = await tx.sellerProfile.create({
-        data: sellerData
-      })
+    const seller = await db.seller.create({
+      data: {
+        storeName,
+        phone,
+        userId: user.id,
+      },
+    });
 
-      return sellerProfile
-    })
-
-    return NextResponse.json(seller)
+    return NextResponse.json(seller);
 
   } catch (error) {
-
-    console.log("SELLER ERROR:", error)
+    console.error("SELLER ERROR:", error);
 
     return NextResponse.json(
       { message: "Failed to create seller" },
       { status: 500 }
-    )
+    );
   }
 }

@@ -4,10 +4,10 @@ import Steps from "@/components/Checkout/Steps";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
-interface Step {
+type Step = {
   number: number;
   title: string;
-}
+};
 
 export default async function CheckoutPage() {
   const session = await auth();
@@ -17,22 +17,10 @@ export default async function CheckoutPage() {
   }
 
   const steps: Step[] = [
-    {
-      number: 1,
-      title: "Personal Details",
-    },
-    {
-      number: 2,
-      title: "Shipping Details",
-    },
-    {
-      number: 3,
-      title: "Payment Method",
-    },
-    {
-      number: 4,
-      title: "Order Summary",
-    },
+    { number: 1, title: "Personal Details" },
+    { number: 2, title: "Shipping Details" },
+    { number: 3, title: "Payment Method" },
+    { number: 4, title: "Order Summary" },
   ];
 
   return (
@@ -44,10 +32,10 @@ export default async function CheckoutPage() {
 
         <div className="w-full p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-6 md:p-8 dark:bg-gray-800 dark:border-gray-700">
           
-          {/* Cart Banner */}
+          {/* Banner */}
           <CartBanner />
 
-          {/* Step Form */}
+          {/* Multi Step Form */}
           <StepForm />
 
         </div>

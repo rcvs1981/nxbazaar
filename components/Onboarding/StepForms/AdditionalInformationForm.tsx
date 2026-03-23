@@ -47,11 +47,11 @@ export default function AdditionalInformationForm() {
         <ImageInput
           imageUrl={imageUrl}
           setImageUrl={setImageUrl}
-          endpoint="farmerProfileUploader"
-          label="Farmer Profile Image"
+          endpoint="sellerProfileUploader"
+          label="Seller Profile Image"
         />
         <TextareaInput
-          label="Farmer's Payment Terms"
+          label="Seller's Payment Terms"
           name="terms"
           register={register}
           errors={errors}

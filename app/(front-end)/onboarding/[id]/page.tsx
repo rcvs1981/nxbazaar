@@ -1,5 +1,6 @@
-import NewSellerForm from "@/components/backoffice/NewSellerForm";
-import { getData } from "@/lib/getData";
+import StepForm from "@/components/Onboarding/StepForm";
+import Steps from "@/components/Onboarding/Steps";
+import React from "react";
 
 interface PageProps {
   params: {
@@ -7,16 +8,40 @@ interface PageProps {
   };
 }
 
-export default async function OnboardingPage({ params }: PageProps) {
-  const user = await getData(`users/${params.id}`);
+export default function Page({ params: { id } }: PageProps) {
+  const steps = [
+    {
+      number: 1,
+      title: "Basic Information",
+    },
+    {
+      number: 2,
+      title: "Farm Details",
+    },
+    {
+      number: 3,
+      title: "Additional Information",
+    },
+    {
+      number: 4,
+      title: "Summary",
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-16">
-      <div className="max-w-4xl mx-auto p-4">
-        <h2>Hello {user?.name}, Tell More About Yourself</h2>
-      </div>
+    <div className="bg-slate-200 dark:bg-slate-950 min-h-screen">
+      <div className="max-w-3xl my-6 mx-auto border border-slate-700 p-6 rounded-lg">
+        
+        {/* STEPS */}
+        <Steps steps={steps} />
 
-      <NewFarmerForm user={user} />
+        <div className="w-full p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-6 md:p-8 dark:bg-gray-800 dark:border-gray-700">
+          
+          {/* FORM */}
+          <StepForm sellerId={id} />
+
+        </div>
+      </div>
     </div>
   );
 }

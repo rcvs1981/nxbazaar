@@ -15,7 +15,7 @@ export default async function Coupons() {
   // Filter by vendorId => to get sales for this vendor
   //Fetch Order by Id
   // Customer Name, email,Phone,OrderNumber
-  const farmerSales = allSales;
+  const sellerSales = allSales;
   return (
     <div>
       {/* Header */}
@@ -28,7 +28,7 @@ export default async function Coupons() {
         {role === "ADMIN" ? (
           <DataTable data={allSales} columns={columns} />
         ) : (
-          <DataTable data={farmerSales} columns={columns} />
+          <DataTable data={sellerSales} columns={columns} />
         )}
       </div>
     </div>

@@ -1,29 +1,28 @@
 import { z } from "zod";
 
-export const sellerSchema = z.object({
-  code: z.string(),
+export const sellerBasicSchema = z.object({
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  phone: z.string().min(10),
+  physicalAddress: z.string().min(5),
+  contactPerson: z.string().min(2),
+  contactPersonPhone: z.string().min(10),
+});
 
-   name: z.string().min(3).optional(),
-  email: z.string().email().optional(),
-  phone: z.string(),
+export const sellerFarmSchema = z.object({
+  landSize: z.number(),
+  mainCrop: z.string().min(2),
+  products: z.array(z.string()).optional(),
+});
 
-  contactPerson: z.string().optional(),
-  contactPersonPhone: z.string().optional(),
-
-  physicalAddress: z.string().optional(),
+export const sellerAdditionalSchema = z.object({
+  profileImageUrl: z.string().optional(),
   terms: z.string().optional(),
   notes: z.string().optional(),
-
-  profileImageUrl: z.string().optional(),
-
-  products: z.array(z.string()).default([]),
-
-  landSize: z.coerce.number().optional(),
-  mainCrop: z.string().optional(),
-
-  isActive: z.boolean().default(true),
-
-  userId: z.string(),
 });
+
+export const sellerSchema = sellerBasicSchema
+  .merge(sellerFarmSchema)
+  .merge(sellerAdditionalSchema);
 
 export type SellerInput = z.infer<typeof sellerSchema>;
