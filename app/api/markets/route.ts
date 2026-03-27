@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
-import {db} from "@/lib/db";
-import { marketSchema } from "@/lib/validators/market.schema";
+
+import { createMarketAction } from "@/actions/market";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const validated = marketSchema.parse(body);
-
-    const market = await db.market.create({
-      data: validated,
-    });
+    const market = await createMarketAction(body);
 
     return NextResponse.json({
       success: true,
       data: market,
     });
-
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Market creation failed";
+
     return NextResponse.json(
-      { success: false, message: "Market creation failed" },
-      { status: 500 }
+      { success: false, message },
+      { status: 500 },
     );
   }
 }

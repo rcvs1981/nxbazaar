@@ -37,7 +37,6 @@ export default function NewMarketForm({ categories }: Props) {
   const {
     register,
     handleSubmit,
-    watch,
     reset,
     formState: { errors },
   } = useForm<MarketFormData>({
@@ -48,7 +47,6 @@ export default function NewMarketForm({ categories }: Props) {
     },
   });
 
-  const isActive = watch("isActive");
 
   async function onSubmit(data: MarketFormData) {
 

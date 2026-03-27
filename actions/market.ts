@@ -1,10 +1,10 @@
 "use server";
 
-import {db} from "@/lib/db";
-import { marketSchema } from "@/schemas/marketSchema";
+import { db } from "@/lib/db";
+import { marketSchema, type MarketFormData } from "@/lib/validators/market.schema";
 
 export async function createMarketAction(data: unknown) {
-  const validated = marketSchema.parse(data);
+  const validated: MarketFormData = marketSchema.parse(data);
 
   const market = await db.market.create({
     data: validated,
