@@ -1,14 +1,41 @@
 "use server";
 
 import {db} from "@/lib/db";
-import { marketSchema } from "@/schemas/marketSchema";
+import { MarketSchema } from "@/lib/validators/market.schema";
+import { cache } from "react";
+import { Market } from "@/types/market";
 
 export async function createMarketAction(data: unknown) {
-  const validated = marketSchema.parse(data);
+  const parsed = MarketSchema.parse(data);
 
-  const market = await db.market.create({
-    data: validated,
+  const existing = await db.market.findUnique({
+    where: { slug: parsed.slug },
   });
 
-  return market;
+  if (existing) {
+    throw new Error("Market already exists");
+  }
+
+  return await db.market.create({
+    data: {
+      ...parsed,
+      categories: {
+        connect: parsed.categoryIds.map((id) => ({ id })),
+      },
+    },
+  });
 }
+
+
+
+export async function getMarkets(): Promise<Market[]> {
+  const markets = await db.market.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      categories: true,
+    },
+  });
+
+  return markets;
+}
+
