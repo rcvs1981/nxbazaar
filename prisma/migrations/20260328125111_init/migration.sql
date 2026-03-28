@@ -14,9 +14,13 @@ CREATE TYPE "Language" AS ENUM ('EN', 'HI', 'MR', 'TA', 'TE', 'KN', 'GU');
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "name" TEXT,
-    "email" TEXT NOT NULL,
-    "password" TEXT,
+    "email" TEXT,
+    "password" TEXT NOT NULL,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "plan" TEXT,
+    "verificationToken" TEXT,
+    "status" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -58,9 +62,8 @@ CREATE TABLE "SellerProfile" (
     "physicalAddress" TEXT,
     "terms" TEXT,
     "isActive" BOOLEAN,
-    "products" TEXT[],
     "turnover" DOUBLE PRECISION,
-    "mainproduct" TEXT,
+    "mainProduct" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -111,29 +114,14 @@ CREATE TABLE "Market" (
 );
 
 -- CreateTable
-CREATE TABLE "GstSetting" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "cgst" DOUBLE PRECISION NOT NULL,
-    "sgst" DOUBLE PRECISION NOT NULL,
-    "igst" DOUBLE PRECISION NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "GstSetting_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "HsnCode" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "gstRate" DOUBLE PRECISION NOT NULL,
-    "cessRate" DOUBLE PRECISION,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "description" TEXT,
+    "gstRate" DOUBLE PRECISION,
+    "cgst" DOUBLE PRECISION,
+    "sgst" DOUBLE PRECISION,
+    "igst" DOUBLE PRECISION,
 
     CONSTRAINT "HsnCode_pkey" PRIMARY KEY ("id")
 );
@@ -143,14 +131,11 @@ CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "description" TEXT,
     "imageUrl" TEXT,
     "productImages" TEXT[],
-    "description" TEXT,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "isWholesale" BOOLEAN NOT NULL DEFAULT false,
     "sku" TEXT,
     "barcode" TEXT,
-    "qrCode" TEXT,
     "productCode" TEXT,
     "unit" TEXT,
     "productPrice" DOUBLE PRECISION NOT NULL,
@@ -159,11 +144,13 @@ CREATE TABLE "Product" (
     "wholesaleQty" INTEGER,
     "productStock" INTEGER,
     "tags" TEXT[],
-    "gstId" TEXT,
-    "hsnId" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isWholesale" BOOLEAN NOT NULL DEFAULT false,
     "categoryId" TEXT NOT NULL,
     "subCategoryId" TEXT,
     "userId" TEXT NOT NULL,
+    "sellerId" TEXT NOT NULL,
+    "hsnCodeId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -178,18 +165,16 @@ CREATE TABLE "Order" (
     "lastName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
-    "address" TEXT,
+    "streetAddress" TEXT,
     "city" TEXT,
     "state" TEXT,
     "country" TEXT,
+    "apartment" TEXT,
     "zip" TEXT,
-    "orderNumber" TEXT,
+    "shippingCost" DOUBLE PRECISION,
+    "orderNumber" TEXT NOT NULL,
     "paymentMethod" TEXT NOT NULL,
     "orderStatus" "OrderStatus" NOT NULL DEFAULT 'PROCESSING',
-    "subTotal" DOUBLE PRECISION NOT NULL,
-    "shippingCost" DOUBLE PRECISION NOT NULL,
-    "gstAmount" DOUBLE PRECISION NOT NULL,
-    "totalAmount" DOUBLE PRECISION NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -202,15 +187,17 @@ CREATE TABLE "OrderItem" (
     "orderId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "vendorId" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "imageUrl" TEXT NOT NULL,
-    "price" DOUBLE PRECISION NOT NULL,
+    "title" TEXT,
+    "imageUrl" TEXT,
     "quantity" INTEGER NOT NULL,
-    "gstRate" DOUBLE PRECISION NOT NULL,
-    "gstAmount" DOUBLE PRECISION NOT NULL,
-    "total" DOUBLE PRECISION NOT NULL,
-    "userId" TEXT NOT NULL,
+    "price" DOUBLE PRECISION NOT NULL,
+    "hsnCode" TEXT,
+    "cgst" DOUBLE PRECISION,
+    "sgst" DOUBLE PRECISION,
+    "igst" DOUBLE PRECISION,
+    "qrCode" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
 );
@@ -319,7 +306,7 @@ CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
 CREATE UNIQUE INDEX "Product_barcode_key" ON "Product"("barcode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Product_qrCode_key" ON "Product"("qrCode");
+CREATE UNIQUE INDEX "Order_orderNumber_key" ON "Order"("orderNumber");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SlugTranslation_model_language_slug_key" ON "SlugTranslation"("model", "language", "slug");
@@ -340,31 +327,28 @@ ALTER TABLE "SellerProfile" ADD CONSTRAINT "SellerProfile_userId_fkey" FOREIGN K
 ALTER TABLE "SubCategory" ADD CONSTRAINT "SubCategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_gstId_fkey" FOREIGN KEY ("gstId") REFERENCES "GstSetting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_hsnId_fkey" FOREIGN KEY ("hsnId") REFERENCES "HsnCode"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_subCategoryId_fkey" FOREIGN KEY ("subCategoryId") REFERENCES "SubCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "SellerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_hsnCodeId_fkey" FOREIGN KEY ("hsnCodeId") REFERENCES "HsnCode"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Sale" ADD CONSTRAINT "Sale_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;

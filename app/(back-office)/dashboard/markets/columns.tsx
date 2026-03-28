@@ -1,58 +1,72 @@
+// app/dashboard/markets/columns.tsx
 "use client";
 
+import { ColumnDef } from "@tanstack/react-table";
+import { Market } from "@/types/market";
 import { Checkbox } from "@/components/ui/checkbox";
 import DateColumn from "@/components/DataTableColumns/DateColumn";
 import ImageColumn from "@/components/DataTableColumns/ImageColumn";
 import SortableColumn from "@/components/DataTableColumns/SortableColumn";
 import ActionColumn from "@/components/DataTableColumns/ActionColumn";
-export const columns = [
+
+
+interface DataTableProps<T> {
+  data: T[];
+  columns: ColumnDef<T>[];
+}
+
+
+export const columns: ColumnDef<Market>[] = [
   {
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(v: boolean) =>
+          table.toggleAllPageRowsSelected(v)
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        onCheckedChange={(v: boolean) =>
+          row.toggleSelected(v)
+        }
       />
     ),
-    enableSorting: false,
-    enableHiding: false,
   },
   {
     accessorKey: "title",
-    header: ({ column }) => <SortableColumn column={column} title="Title" />,
+    header: ({ column }) => (
+      <SortableColumn column={column} title="Title" />
+    ),
   },
   {
     accessorKey: "logoUrl",
-    header: "Market Logo",
-    cell: ({ row }) => <ImageColumn row={row} accessorKey="logoUrl" />,
+    header: "Logo",
+    cell: ({ row }) => (
+      <ImageColumn<Market> row={row} accessorKey="logoUrl" />
+    ),
   },
   {
     accessorKey: "isActive",
     header: "Active",
   },
-
   {
     accessorKey: "createdAt",
-    header: "Date Created",
-    cell: ({ row }) => <DateColumn row={row} accessorKey="createdAt" />,
+    header: "Created",
+    cell: ({ row }) => (
+      <DateColumn<Market> row={row} accessorKey="createdAt" />
+    ),
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const market = row.original;
+
       return (
-        <ActionColumn
+        <ActionColumn<Market>
           row={row}
           title="Market"
           editEndpoint={`markets/update/${market.id}`}
@@ -62,3 +76,6 @@ export const columns = [
     },
   },
 ];
+
+
+ 

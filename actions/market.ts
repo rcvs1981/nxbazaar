@@ -1,12 +1,15 @@
 "use server";
 
 import {db} from "@/lib/db";
-import { MarketSchema } from "@/lib/validators/market.schema";
-import { cache } from "react";
+import { marketSchema, MarketInput } from "@/lib/validators/market.schema";
 import { Market } from "@/types/market";
+import { cache } from "react";
 
-export async function createMarketAction(data: unknown) {
-  const parsed = MarketSchema.parse(data);
+// ✅ CREATE
+export async function createMarketAction(
+  data: unknown
+): Promise<Market> {
+  const parsed = marketSchema.parse(data);
 
   const existing = await db.market.findUnique({
     where: { slug: parsed.slug },
@@ -18,24 +21,83 @@ export async function createMarketAction(data: unknown) {
 
   return await db.market.create({
     data: {
-      ...parsed,
-      categories: {
-        connect: parsed.categoryIds.map((id) => ({ id })),
-      },
+      title: parsed.title,
+      slug: parsed.slug,
+      logoUrl: parsed.logoUrl ?? null,
+      description: parsed.description ?? null,
+      isActive: parsed.isActive,
+
+      // ✅ SAFE relation connect
+      categories: parsed.categoryIds
+        ? {
+            connect: parsed.categoryIds.map((id: string) => ({
+              id,
+            })),
+          }
+        : undefined,
+    },
+    include: {
+      categories: true,
     },
   });
 }
 
-
-
+// ✅ GET
 export async function getMarkets(): Promise<Market[]> {
-  const markets = await db.market.findMany({
+  return await db.market.findMany({
     orderBy: { createdAt: "desc" },
     include: {
       categories: true,
     },
   });
+}
 
-  return markets;
+// ✅ UPDATE (FULL SAFE)
+export async function updateMarket(
+  id: string,
+  data: MarketInput
+): Promise<Market> {
+  const parsed = marketSchema.parse(data);
+
+  return await db.market.update({
+    where: { id },
+    data: {
+      title: parsed.title,
+      slug: parsed.slug,
+      logoUrl: parsed.logoUrl ?? null,
+      description: parsed.description ?? null,
+      isActive: parsed.isActive,
+
+      // ✅ RELATION UPDATE (IMPORTANT 🔥)
+      categories: parsed.categoryIds
+        ? {
+            set: parsed.categoryIds.map((id: string) => ({
+              id,
+            })),
+          }
+        : undefined,
+    },
+    include: {
+      categories: true,
+    },
+  });
+}
+
+// ✅ DELETE
+export async function deleteMarket(id: string): Promise<void> {
+  await db.market.delete({
+    where: { id },
+  });
+}
+
+// ✅ TOGGLE
+export async function toggleMarketStatus(
+  id: string,
+  isActive: boolean
+): Promise<Market> {
+  return await db.market.update({
+    where: { id },
+    data: { isActive },
+  });
 }
 
