@@ -1,11 +1,11 @@
 "use client";
 
+import React from "react";
 import { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
 
 type Option = {
-  id: string;
-  title?: string;
-  name?: string;
+  label: string;
+  value: string;
 };
 
 type Props<T extends FieldValues> = {
@@ -14,6 +14,7 @@ type Props<T extends FieldValues> = {
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
   options: Option[];
+  multiple?: boolean;
   className?: string;
 };
 
@@ -23,28 +24,44 @@ export default function SelectInput<T extends FieldValues>({
   register,
   errors,
   options,
+  multiple = false,
   className,
 }: Props<T>) {
   return (
-    <div className={className}>
-      <label className="block mb-2 text-sm font-medium">{label}</label>
+    <div className="w-full">
+      <label className="block mb-2 text-sm font-medium">
+        {label}
+      </label>
 
       <select
-        {...register(name)}
-        className="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5"
+        multiple={multiple}
+        className={`border rounded-lg p-2 w-full ${className}`}
+        
+        // 🔥 IMPORTANT FIX
+        {...register(name, {
+          onChange: (e) => {
+            if (multiple) {
+              const values = Array.from(
+                e.target.selectedOptions,
+                (option) => option.value
+              );
+              e.target.value = values;
+            }
+          },
+        })}
       >
-        <option value="">Select {label}</option>
+        {!multiple && <option value="">Select option</option>}
 
-        {options?.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.title || option.name}
+        {options.map((option, index) => (
+          <option key={`${option.value}-${index}`} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
 
       {errors[name] && (
         <p className="text-red-500 text-sm mt-1">
-          {String(errors[name]?.message || "")}
+          {String(errors[name]?.message)}
         </p>
       )}
     </div>

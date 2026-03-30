@@ -15,12 +15,13 @@ export default function ImageColumn<TData>({
   if (!imageUrl) return null;
 
   return (
-    <Image
-      src={imageUrl}
-      width={40}
-      height={40}
-      alt="image"
-      className="rounded-full object-cover"
-    />
+    <div className="relative w-10 h-10">
+      <Image
+        src={imageUrl}
+        alt="image"
+        fill
+        className="rounded-full object-cover"
+      />
+    </div>
   );
 }

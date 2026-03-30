@@ -1,30 +1,31 @@
 import { z } from "zod";
 
-export const orderItemInputSchema = z.object({
-  productId: z.string(),
-  quantity: z.number().int().min(1),
+export const orderItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  imageUrl: z.string().optional(),
+  qty: z.number(),
+  salePrice: z.number(),
+  vendorId: z.string(),
+});
+
+export const checkoutSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  phone: z.string(),
+  streetAddress: z.string(),
+  city: z.string(),
+  district: z.string(),
+  country: z.string(),
+  paymentMethod: z.string(),
+  shippingCost: z.number(),
+  userId: z.string(),
 });
 
 export const createOrderSchema = z.object({
-  userId: z.string(),
-
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().min(5),
-
-  streetAddress: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
-  apartment: z.string().optional(),
-  state: z.string().optional(),
-  zip: z.string().optional(),
-
-  shippingCost: z.number().optional(),
-
-  paymentMethod: z.string(),
-
-  items: z.array(orderItemInputSchema).min(1),
+  checkoutFormData: checkoutSchema,
+  orderItems: z.array(orderItemSchema),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

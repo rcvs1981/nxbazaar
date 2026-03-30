@@ -1,28 +1,70 @@
-
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/axios";
-import { Market, MarketInput } from "@/types/market";
+import {
+  useApiGet,
+  useApiPost,
+  useApiPut,
+  useApiDelete,
+  useApiBulkDelete,
+} from "@/lib/apiRequest";
+
+import { Market } from "@/types/market";
+
+export const MARKET_QUERY_KEY = ["markets"] as const;
+
+/* ================================
+   GET ALL
+================================ */
 export function useMarkets() {
-  return useQuery({
-    queryKey: ["markets"],
-    queryFn: async () => {
-      const { data } = await api.get("/markets");
-      return data;
-    },
-  });
+  return useApiGet<Market[]>("/markets", MARKET_QUERY_KEY);
 }
 
-export function useCreateMarket() {
-  const qc = useQueryClient();
+/* ================================
+   GET SINGLE 🔥
+================================ */
+export function useMarket(id: string) {
+  return useApiGet<Market>(
+    `/markets/${id}`,
+    ["markets", id]
+  );
+}
 
-  return useMutation({
-    mutationFn: async (data: any) => {
-      return api.post("/markets", data);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["markets"] });
-    },
-  });
+/* ================================
+   CREATE
+================================ */
+export function useCreateMarket() {
+  return useApiPost<Market, Partial<Market>>(
+    "/markets",
+    MARKET_QUERY_KEY
+  );
+}
+
+/* ================================
+   UPDATE
+================================ */
+export function useUpdateMarket() {
+  return useApiPut<Market, Partial<Market>>(
+    "/markets",
+    MARKET_QUERY_KEY
+  );
+}
+
+/* ================================
+   DELETE
+================================ */
+export function useDeleteMarket() {
+  return useApiDelete<Market>(
+    "/markets",
+    MARKET_QUERY_KEY
+  );
+}
+
+/* ================================
+   BULK DELETE
+================================ */
+export function useBulkDeleteMarket() {
+  return useApiBulkDelete<Market>(
+    "/markets",
+    MARKET_QUERY_KEY
+  );
 }

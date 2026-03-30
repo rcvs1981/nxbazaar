@@ -1,32 +1,58 @@
-import {db} from "@/lib/db"
-import { NextRequest, NextResponse } from "next/server"
+import {db} from "@/lib/db";
+import { NextResponse } from "next/server";
 
 type Params = {
   params: {
-    id: string
+    id: string;
+  };
+};
+
+// ✅ GET SINGLE ORDER
+export async function GET(
+  request: Request,
+  { params }: Params
+) {
+  try {
+    const order = await db.order.findUnique({
+      where: { id: params.id },
+      include: { orderItems: true },
+    });
+
+    return NextResponse.json(order);
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Failed to Fetch Order", error },
+      { status: 500 }
+    );
   }
 }
 
-export async function GET(
-  request: NextRequest,
+// ✅ DELETE ORDER
+export async function DELETE(
+  request: Request,
   { params }: Params
 ) {
+  try {
+    const existingOrder = await db.order.findUnique({
+      where: { id: params.id },
+    });
 
-  const order = await db.order.findUnique({
-    where: {
-      id: params.id,
-    },
-    include: {
-      orderItems: true,
-    },
-  })
+    if (!existingOrder) {
+      return NextResponse.json(
+        { message: "Order Not Found" },
+        { status: 404 }
+      );
+    }
 
-  if (!order) {
+    const deletedOrder = await db.order.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json(deletedOrder);
+  } catch (error) {
     return NextResponse.json(
-      { message: "Order not found" },
-      { status: 404 }
-    )
+      { message: "Failed to Delete Order", error },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(order)
 }

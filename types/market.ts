@@ -1,4 +1,4 @@
-// types/market.ts
+
 export interface Market {
   id: string;
   title: string;

@@ -17,14 +17,13 @@ export default function ImageInput({
 }: Props) {
   return (
     <div className="space-y-3">
-
       <label className="text-sm font-medium">{label}</label>
 
       <UploadButton<OurFileRouter>
         endpoint="bannerImageUploader"
         onClientUploadComplete={(res) => {
           if (res && res.length > 0) {
-            setImageUrl(res[0].url);
+            setImageUrl(res[0].ufsUrl); // ✅ FIXED
           }
         }}
         onUploadError={(error: Error) => {
@@ -42,7 +41,6 @@ export default function ImageInput({
           />
         </div>
       )}
-
     </div>
   );
 }

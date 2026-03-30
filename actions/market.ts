@@ -1,11 +1,13 @@
 "use server";
 
-import {db} from "@/lib/db";
+import { db } from "@/lib/db";
 import { marketSchema, MarketInput } from "@/lib/validators/market.schema";
 import { Market } from "@/types/market";
-import { cache } from "react";
+import { revalidatePath } from "next/cache";
 
-// ✅ CREATE
+/* ================================
+   CREATE
+================================ */
 export async function createMarketAction(
   data: unknown
 ): Promise<Market> {
@@ -19,47 +21,43 @@ export async function createMarketAction(
     throw new Error("Market already exists");
   }
 
-  return await db.market.create({
+  return db.market.create({
     data: {
       title: parsed.title,
       slug: parsed.slug,
       logoUrl: parsed.logoUrl ?? null,
       description: parsed.description ?? null,
       isActive: parsed.isActive,
-
-      // ✅ SAFE relation connect
       categories: parsed.categoryIds
         ? {
-            connect: parsed.categoryIds.map((id: string) => ({
-              id,
-            })),
+            connect: parsed.categoryIds.map((id) => ({ id })),
           }
         : undefined,
     },
-    include: {
-      categories: true,
-    },
+    include: { categories: true },
   });
 }
 
-// ✅ GET
+/* ================================
+   GET
+================================ */
 export async function getMarkets(): Promise<Market[]> {
-  return await db.market.findMany({
+  return db.market.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      categories: true,
-    },
+    include: { categories: true },
   });
 }
 
-// ✅ UPDATE (FULL SAFE)
+/* ================================
+   UPDATE
+================================ */
 export async function updateMarket(
   id: string,
   data: MarketInput
 ): Promise<Market> {
   const parsed = marketSchema.parse(data);
 
-  return await db.market.update({
+  return db.market.update({
     where: { id },
     data: {
       title: parsed.title,
@@ -67,37 +65,44 @@ export async function updateMarket(
       logoUrl: parsed.logoUrl ?? null,
       description: parsed.description ?? null,
       isActive: parsed.isActive,
-
-      // ✅ RELATION UPDATE (IMPORTANT 🔥)
       categories: parsed.categoryIds
         ? {
-            set: parsed.categoryIds.map((id: string) => ({
-              id,
-            })),
+            set: parsed.categoryIds.map((id) => ({ id })),
           }
         : undefined,
     },
-    include: {
-      categories: true,
-    },
+    include: { categories: true },
   });
 }
 
-// ✅ DELETE
-export async function deleteMarket(id: string): Promise<void> {
-  await db.market.delete({
+/* ================================
+   DELETE
+================================ */
+export async function deleteMarket(id: string) {
+  await db.market.delete({ where: { id } });
+
+  revalidatePath("/dashboard/markets");
+}
+
+/* ================================
+   BULK DELETE
+================================ */
+export async function bulkDeleteMarkets(ids: string[]) {
+  await db.market.deleteMany({
+    where: { id: { in: ids } },
+  });
+
+  revalidatePath("/dashboard/markets");
+
+  return {
+    success: true,
+    message: "Markets deleted successfully",
+  };
+}
+
+export async function getMarketById(id: string) {
+  return await db.market.findUnique({
     where: { id },
+    include: { categories: true },
   });
 }
-
-// ✅ TOGGLE
-export async function toggleMarketStatus(
-  id: string,
-  isActive: boolean
-): Promise<Market> {
-  return await db.market.update({
-    where: { id },
-    data: { isActive },
-  });
-}
-

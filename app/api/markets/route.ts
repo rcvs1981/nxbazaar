@@ -1,6 +1,6 @@
-import {db} from "@/lib/db";
+import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { MarketSchema } from "@/lib/validators/market";
+import { marketSchema } from "@/lib/validators/market.schema";
 import { z } from "zod";
 
 /**
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // ✅ validate
-    const data = MarketSchema.parse(body);
+    const data = marketSchema.parse(body);
 
     // ✅ check duplicate slug
     const existingMarket = await db.market.findUnique({
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ create with relation fix
+    // ✅ create market
     const newMarket = await db.market.create({
       data: {
         title: data.title,
@@ -37,10 +37,12 @@ export async function POST(req: Request) {
         description: data.description,
         isActive: data.isActive,
 
-        // 🔥 IMPORTANT (relation fix)
         categories: {
           connect: data.categoryIds.map((id) => ({ id })),
         },
+      },
+      include: {
+        categories: true, // 🔥 return relations
       },
     });
 
@@ -53,14 +55,15 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.log("POST ERROR:", error);
+    console.error("POST ERROR:", error);
 
+    // 🔥 Zod error
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
           message: "Validation failed",
-          errors: error.errors,
+          errors: error.flatten(), // ✅ better format
         },
         { status: 400 }
       );
@@ -69,7 +72,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to create Market",
+        message: "Internal Server Error",
       },
       { status: 500 }
     );
@@ -83,8 +86,9 @@ export async function GET() {
   try {
     const markets = await db.market.findMany({
       orderBy: { createdAt: "desc" },
+
       include: {
-        categories: true, 
+        categories: true,
       },
     });
 
@@ -92,11 +96,12 @@ export async function GET() {
       {
         success: true,
         data: markets,
+        message: "Markets fetched successfully", // ✅ consistency
       },
       { status: 200 }
     );
   } catch (error) {
-    console.log("GET ERROR:", error);
+    console.error("GET ERROR:", error);
 
     return NextResponse.json(
       {
@@ -106,4 +111,24 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+
+
+export async function DELETE(req: Request) {
+  const body = await req.json();
+  const ids: string[] = body.ids;
+
+  await db.market.deleteMany({
+    where: {
+      id: {
+        in: ids,
+      },
+    },
+  });
+
+  return Response.json({
+    success: true,
+    message: "Markets deleted successfully",
+  });
 }

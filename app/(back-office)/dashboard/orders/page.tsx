@@ -1,8 +1,21 @@
 import OrderCard from "@/components/Order/OrderCard";
-import { getOrders } from "@/actions/orders";
+import { auth } from "@/auth";
+import { Session } from "next-auth";
+import { getOrdersByUser } from "@/actions/order";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
-  const orders = await getOrders();
+  const session = await Session(auth);
+
+  // ✅ Proper auth handling
+  if (!session) {
+    redirect("/login");
+  }
+
+  const userId = session.user.id;
+
+  // ✅ Direct DB query (optimized)
+  const orders = await getOrdersByUser(userId);
 
   if (!orders || orders.length === 0) {
     return <p>No Orders Yet</p>;
@@ -16,13 +29,12 @@ export default async function Page() {
             <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
               Your Orders
             </h1>
-
             <p className="mt-2 text-sm text-gray-600">
-              Check the status of recent and old orders
+              Check the status of your orders
             </p>
           </div>
 
-          <ul className="mt-8 space-y-5 lg:mt-12">
+          <ul className="mt-8 space-y-6">
             {orders.map((order) => (
               <OrderCard key={order.id} order={order} />
             ))}
