@@ -1,36 +1,38 @@
 import Heading from "@/components/backoffice/Heading";
-import PageHeader from "@/components/backoffice/PageHeader";
-import TableActions from "@/components/backoffice/TableActions";
 import DataTable from "@/components/data-table-components/DataTable";
-import { getData } from "@/lib/getData";
-
-import Link from "next/link";
-import React from "react";
 import { columns } from "./columns";
 
-export default async function Sales() {
-  const allSales = await getSales("sales");
+import { auth } from "@/auth";
+import { getSales } from "@/actions/sales";
 
-  // Fetch all the Sales
-  // Filter by vendorId => to get sales for this vendor
-  //Fetch Order by Id
-  // Customer Name, email,Phone,OrderNumber
-  const sellerSales = allSales;
+export default async function SalesPage() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return <p>Unauthorized</p>;
+  }
+
+  const userId = session.user.id;
+  const role = session.user.role;
+
+  // ✅ Server-side DB call
+  const allSales = await getSales();
+
+  // ✅ Vendor filter
+  const sellerSales =
+    role === "ADMIN"
+      ? allSales
+      : allSales.filter(
+          (sale) => sale.vendorId === userId
+        );
+
   return (
-    <div>
-      {/* Header */}
-      {/* <PageHeader
-        heading="Coupons"
-        href="/dashboard/coupons/new"
-        linkTitle="Add Coupon"
-      /> */}
-      <div className="py-8">
-        {role === "ADMIN" ? (
-          <DataTable data={allSales} columns={columns} />
-        ) : (
-          <DataTable data={sellerSales} columns={columns} />
-        )}
-      </div>
+    <div className="py-8">
+      <Heading title="Sales" />
+      <DataTable
+        data={sellerSales}
+        columns={columns}
+      />
     </div>
   );
 }

@@ -1,14 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import DateColumn from "@/components/DataTableColumns/DateColumn";
 import ImageColumn from "@/components/DataTableColumns/ImageColumn";
 import SortableColumn from "@/components/DataTableColumns/SortableColumn";
-import ActionColumn from "@/components/DataTableColumns/ActionColumn";
-export const columns = [
+
+import { Sale } from "@/types/sale";
+
+export const columns: ColumnDef<Sale>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -17,25 +18,33 @@ export const columns = [
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onCheckedChange={(value: boolean) =>
+          table.toggleAllPageRowsSelected(!!value)
+        }
         aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onCheckedChange={(value: boolean) =>
+          row.toggleSelected(!!value)
+        }
         aria-label="Select row"
       />
     ),
     enableSorting: false,
     enableHiding: false,
   },
+
   {
     accessorKey: "productImage",
     header: "Product Image",
-    cell: ({ row }) => <ImageColumn row={row} accessorKey="productImage" />,
+    cell: ({ row }) => (
+      <ImageColumn row={row} accessorKey="productImage" />
+    ),
   },
+
   {
     accessorKey: "productTitle",
     header: ({ column }) => (
@@ -47,31 +56,22 @@ export const columns = [
     accessorKey: "productPrice",
     header: "Price",
   },
+
   {
     accessorKey: "productQty",
     header: "Qty",
   },
+
   {
     accessorKey: "total",
     header: "Total",
   },
+
   {
     accessorKey: "createdAt",
     header: "Date Created",
-    cell: ({ row }) => <DateColumn row={row} accessorKey="createdAt" />,
+    cell: ({ row }) => (
+      <DateColumn row={row} accessorKey="createdAt" />
+    ),
   },
-  // {
-  //   id: "actions",
-  //   cell: ({ row }) => {
-  //     const product = row.original;
-  //     return (
-  //       <ActionColumn
-  //         row={row}
-  //         title="Product"
-  //         editEndpoint={`products/update/${product.id}`}
-  //         endpoint={`products/${product.id}`}
-  //       />
-  //     );
-  //   },
-  // },
 ];

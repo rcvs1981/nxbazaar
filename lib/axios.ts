@@ -11,8 +11,15 @@ const api = axios.create({
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    console.error("AXIOS ERROR FULL:", error); // 👈 full error
+
     const message =
-      error?.response?.data?.message || "Something went wrong";
-    return Promise.reject(new Error(message));
+      error?.response?.data?.message ||
+      error?.message ||
+      "Something went wrong";
+
+    return Promise.reject(error); // ✅ DO NOT wrap
   }
 );
+
+export default api; 

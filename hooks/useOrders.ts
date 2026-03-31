@@ -1,19 +1,61 @@
-"use client"
+"use client";
 
-import { useMutation } from "@tanstack/react-query"
-import { createOrder } from "@/actions/createOrder"
-import { CheckoutFormData, OrderItemInput } from "@/types/order"
+import {
+  useApiGet,
+  useApiPost,
+  useApiDelete,
+} from "@/lib/apiRequest";
 
-type CreateOrderInput = {
-  checkoutFormData: CheckoutFormData
-  orderItems: OrderItemInput[]
+import {
+  CreateOrderPayload,
+  Order,
+} from "@/types/order";
+
+/* ================================
+   GET ALL ORDERS
+================================ */
+
+export function useOrders() {
+  return useApiGet<Order[]>("/orders", ["orders"]);
 }
 
-export function useCreateOrder() {
+/* ================================
+   GET USER ORDERS
+================================ */
 
-  return useMutation({
-    mutationFn: async (data: CreateOrderInput) => {
-      return await createOrder(data)
-    },
-  })
+export function useUserOrders(userId: string) {
+  return useApiGet<Order[]>(
+    `/orders/user/${userId}`,
+    ["orders", userId]
+  );
+}
+
+/* ================================
+   GET SINGLE ORDER
+================================ */
+
+export function useOrder(id: string) {
+  return useApiGet<Order>(
+    `/orders/${id}`,
+    ["order", id]
+  );
+}
+
+/* ================================
+   CREATE ORDER
+================================ */
+
+export function useCreateOrder() {
+  return useApiPost<Order, CreateOrderPayload>(
+    "/orders",
+    ["orders"]
+  );
+}
+
+/* ================================
+   DELETE ORDER
+================================ */
+
+export function useDeleteOrder() {
+  return useApiDelete<Order>("/orders", ["orders"]);
 }
