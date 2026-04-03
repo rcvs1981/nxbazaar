@@ -73,7 +73,7 @@ model UserProfile {
   userId String @unique
 
   // Personal Details
-  name      String?
+ 
   firstName String?
   lastName  String?
   email     String?
@@ -111,7 +111,7 @@ model SellerProfile {
 
   isActive Boolean?
 
-  products Product[]
+  
 
   turnover    Float?
   mainProduct String?
@@ -190,6 +190,8 @@ model HsnCode {
   igst Float?
 
   products Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
@@ -223,9 +225,7 @@ model Product {
   // VENDOR
   userId   String
   user     User   @relation(fields: [userId], references: [id])
-  sellerId String
-
-  seller SellerProfile @relation(fields: [sellerId], references: [id])
+ 
 
   // HSN
   hsnCodeId String?

@@ -1,12 +1,26 @@
 "use client";
 
+import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import DateColumn from "@/components/DataTableColumns/DateColumn";
-import ImageColumn from "@/components/DataTableColumns/ImageColumn";
 import SortableColumn from "@/components/DataTableColumns/SortableColumn";
 import ActionColumn from "@/components/DataTableColumns/ActionColumn";
 import Status from "@/components/DataTableColumns/Status";
-export const columns = [
+
+// ✅ Define Seller Type
+export type Seller = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  plan: string;
+  status: boolean;
+  createdAt: string | Date;
+};
+
+// ✅ Typed Columns
+export const columns: ColumnDef<Seller>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -15,7 +29,9 @@ export const columns = [
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        onCheckedChange={(value) =>
+          table.toggleAllPageRowsSelected(!!value)
+        }
         aria-label="Select all"
       />
     ),
@@ -29,51 +45,56 @@ export const columns = [
     enableSorting: false,
     enableHiding: false,
   },
+
   {
     accessorKey: "name",
-    header: ({ column }) => <SortableColumn column={column} title="Name" />,
+    header: ({ column }) => (
+      <SortableColumn column={column} title="Name" />
+    ),
   },
-  // {
-  //   accessorKey: "profileImageUrl",
-  //   header: "Profile Image",
-  //   cell: ({ row }) => <ImageColumn row={row} accessorKey="profileImageUrl" />,
-  // },
+
   {
     accessorKey: "email",
     header: "Email",
   },
+
   {
     accessorKey: "role",
     header: "Role",
   },
+
   {
     accessorKey: "plan",
     header: "Plan",
   },
+
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <Status row={row} accessorKey="status" />,
+    cell: ({ row }) => (
+      <Status row={row} accessorKey="status" />
+    ),
   },
-  // {
-  //   accessorKey: "isActive",
-  //   header: "Active",
-  // },
+
   {
     accessorKey: "createdAt",
     header: "Date Created",
-    cell: ({ row }) => <DateColumn row={row} accessorKey="createdAt" />,
+    cell: ({ row }) => (
+      <DateColumn row={row} accessorKey="createdAt" />
+    ),
   },
+
   {
     id: "actions",
     cell: ({ row }) => {
       const seller = row.original;
+
       return (
         <ActionColumn
           row={row}
           title="Seller"
-          editEndpoint={`sellers/update/${seller.id}`}
-          endpoint={`sellers/${seller.id}`}
+          editEndpoint={`/sellers/update/${seller.id}`}
+          endpoint={`/sellers/${seller.id}`}
         />
       );
     },

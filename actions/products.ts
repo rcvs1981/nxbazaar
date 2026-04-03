@@ -1,91 +1,147 @@
-"use server"
+"use server";
 
-import {db} from "@/lib/db"
-import { ProductRequest, CreateProductInput } from "@/types/product"
+import { db } from "@/lib/db";
+import { auth } from "@/auth";
+import { Product } from "@prisma/client";
+import { CreateProductInput, ProductRequest } from "@/types/product";
 
-/* CREATE PRODUCT */
+/* ================= CREATE ================= */
 
 export async function createProduct(
   data: CreateProductInput
 ): Promise<ProductRequest> {
 
-  const existing = await db.product.findUnique({
-    where: { slug: data.slug }
-  })
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
 
-  if (existing) {
-    throw new Error("Product already exists")
-  }
+  // slug check
+  const exists = await db.product.findUnique({
+    where: { slug: data.slug },
+  });
 
-  const product = await db.product.create({
+  if (exists) throw new Error("Slug already exists");
+
+  return await db.product.create({
     data: {
       ...data,
-      imageUrl: data.productImages?.[0] ?? null
-    }
-  })
 
-  return product
-}
+      imageUrl: data.productImages?.[0] ?? data.imageUrl,
 
-/* GET ALL PRODUCTS */
+      user: {
+        connect: { id: session.user.id },
+      },
 
-export async function getProducts(): Promise<Product[]> {
+      category: data.categoryId
+        ? { connect: { id: data.categoryId } }
+        : undefined,
 
-  const products = await db.product.findMany({
-    orderBy: {
-      createdAt: "desc"
+      hsnCode: data.hsnCodeId
+        ? { connect: { id: data.hsnCodeId } }
+        : undefined,
     },
-    include: {
-      hsnCode: true
-    }
-  })
 
-  return products
+    include: {
+      category: true,
+      hsnCode: true,
+      user: true,
+    },
+  });
 }
 
-/* GET SINGLE PRODUCT */
-
-export async function getProduct(
-  id: string
-): Promise<ProductRequest| null> {
-
-  const product = await db.product.findUnique({
-    where: { id },
-    include: {
-      hsnCode: true
-    }
-  })
-
-  return product
-}
-
-/* UPDATE PRODUCT */
+/* ================= UPDATE ================= */
 
 export async function updateProduct(
   id: string,
   data: Partial<CreateProductInput>
 ): Promise<ProductRequest> {
 
-  const product = await db.product.update({
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const product = await db.product.findUnique({
     where: { id },
+  });
+
+  if (!product || product.userId !== session.user.id) {
+    throw new Error("Not allowed");
+  }
+
+  return await db.product.update({
+    where: { id },
+
     data: {
       ...data,
-      imageUrl: data.productImages?.[0] ?? undefined
-    }
-  })
 
-  return product
+      imageUrl:
+        data.productImages && data.productImages.length > 0
+          ? data.productImages[0]
+          : data.imageUrl,
+
+      // ✅ FIXED
+      gstRate: data.gstRate,
+
+      category:
+        data.categoryId === null
+          ? { disconnect: true }
+          : data.categoryId
+          ? { connect: { id: data.categoryId } }
+          : undefined,
+
+      hsnCode:
+        data.hsnCodeId === null
+          ? { disconnect: true }
+          : data.hsnCodeId
+          ? { connect: { id: data.hsnCodeId } }
+          : undefined,
+    },
+
+    include: {
+      category: true,
+      hsnCode: true,
+      user: true,
+    },
+  });
 }
 
-/* DELETE PRODUCT */
+/* ================= DELETE ================= */
 
-export async function deleteProduct(
-  id: string
-): Promise<{ success: boolean }> {
+export async function deleteProduct(id: string) {
 
-  await db.product.delete({
-    where: { id }
-  })
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
 
-  return { success: true }
+  const product = await db.product.findUnique({
+    where: { id },
+  });
+
+  if (!product || product.userId !== session.user.id) {
+    throw new Error("Not allowed");
+  }
+
+  await db.product.delete({ where: { id } });
+
+  return { success: true };
+}
+
+export async function getProducts(filters?: {
+  userId?: string;
+}) {
+
+  return await db.product.findMany({
+
+    where: {
+      userId: filters?.userId,
+    },
+
+    orderBy: {
+      createdAt: "desc",
+    },
+
+    include: {
+      category: true,
+      hsnCode: true,
+      user: true,
+    },
+
+  });
 }

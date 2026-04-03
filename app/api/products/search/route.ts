@@ -1,73 +1,80 @@
-import db from "@/lib/db";
-import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import {db} from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
 
-    const searchTerm = searchParams.get("search") ?? "";
-    const sortBy = searchParams.get("sort");
+    // ✅ Params
+    const sortBy = searchParams.get("sort") as "asc" | "desc" | null;
     const min = searchParams.get("min");
     const max = searchParams.get("max");
+    const searchTerm = searchParams.get("search") ?? "";
     const page = Number(searchParams.get("page") ?? 1);
+    const categoryId = searchParams.get("categoryId");
 
-    const pageSize = 10;
+    const pageSize = 3;
+    const skip = (page - 1) * pageSize;
 
-    const where: Prisma.ProductWhereInput = {
-      OR: [
-        {
-          title: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
-        {
-          description: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
+    // ✅ WHERE condition (single source of truth)
+    const where: any = {};
+
+    // 🔹 Category filter
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    // 🔹 Search filter
+    if (searchTerm) {
+      where.OR = [
+        { title: { contains: searchTerm, mode: "insensitive" } },
         {
           category: {
-            title: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
+            title: { contains: searchTerm, mode: "insensitive" },
           },
         },
-      ],
-    };
+        { description: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
 
+    // 🔹 Price filter
     if (min || max) {
       where.salePrice = {};
 
-      if (min) {
-        where.salePrice.gte = Number(min);
-      }
-
-      if (max) {
-        where.salePrice.lte = Number(max);
-      }
+      if (min) where.salePrice.gte = Number(min);
+      if (max) where.salePrice.lte = Number(max);
     }
 
-    const products = await db.product.findMany({
-      where,
+    // ✅ ORDER BY
+    let orderBy: any = { createdAt: "desc" };
 
-      skip: (page - 1) * pageSize,
+    if (sortBy) {
+      orderBy = { salePrice: sortBy };
+    }
 
-      take: pageSize,
+    // ✅ Query (single optimized query)
+    const [products, totalCount] = await Promise.all([
+      db.product.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy,
+        include: {
+          category: true,
+        },
+      }),
 
-      orderBy: sortBy
-        ? { salePrice: sortBy === "asc" ? "asc" : "desc" }
-        : { createdAt: "desc" },
+      db.product.count({
+        where,
+      }),
+    ]);
 
-      include: {
-        category: true,
-      },
+    return NextResponse.json({
+      products,
+      totalCount,
+      page,
+      pageSize,
     });
-
-    return NextResponse.json(products);
   } catch (error) {
     console.error(error);
 

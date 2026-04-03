@@ -11,22 +11,21 @@ type Params = {
 
 export async function GET(request: Request, { params }: Params) {
   try {
+    if (!params.id) {
+      return NextResponse.json(
+        { success: false, message: "Seller ID is required" },
+        { status: 400 }
+      );
+    }
 
     const seller = await db.user.findUnique({
-      where: {
-        id: params.id,
-      },
-      include: {
-        sellerProfile: true,
-      },
+      where: { id: params.id },
+      include: { sellerProfile: true },
     });
 
     if (!seller) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Seller not found",
-        },
+        { success: false, message: "Seller not found" },
         { status: 404 }
       );
     }
@@ -37,14 +36,10 @@ export async function GET(request: Request, { params }: Params) {
     });
 
   } catch (error) {
-
-    console.error(error);
+    console.error("GET SELLER ERROR:", error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch seller",
-      },
+      { success: false, message: "Failed to fetch seller" },
       { status: 500 }
     );
   }
@@ -54,20 +49,32 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function DELETE(request: Request, { params }: Params) {
   try {
+    if (!params.id) {
+      return NextResponse.json(
+        { success: false, message: "Seller ID is required" },
+        { status: 400 }
+      );
+    }
 
-    await db.$transaction([
-      db.sellerProfile.deleteMany({
-        where: {
-          userId: params.id,
-        },
-      }),
+    await db.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: params.id },
+      });
 
-      db.user.delete({
-        where: {
-          id: params.id,
-        },
-      }),
-    ]);
+      if (!user) {
+        throw new Error("Seller not found");
+      }
+
+      // ✅ delete profile first
+      await tx.sellerProfile.deleteMany({
+        where: { userId: params.id },
+      });
+
+      // ⚠️ optional: instead of delete → downgrade
+      await tx.user.delete({
+        where: { id: params.id },
+      });
+    });
 
     return NextResponse.json({
       success: true,
@@ -75,13 +82,13 @@ export async function DELETE(request: Request, { params }: Params) {
     });
 
   } catch (error) {
-
-    console.error(error);
+    console.error("DELETE SELLER ERROR:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to delete seller",
+        message:
+          error instanceof Error ? error.message : "Delete failed",
       },
       { status: 500 }
     );
@@ -92,17 +99,21 @@ export async function DELETE(request: Request, { params }: Params) {
 
 export async function PUT(request: Request, { params }: Params) {
   try {
+    if (!params.id) {
+      return NextResponse.json(
+        { success: false, message: "Seller ID is required" },
+        { status: 400 }
+      );
+    }
 
     const body = await request.json();
     const { status, emailVerified } = body;
 
     const updatedUser = await db.user.update({
-      where: {
-        id: params.id,
-      },
+      where: { id: params.id },
       data: {
-        status,
-        emailVerified,
+        ...(status !== undefined && { status }),
+        ...(emailVerified !== undefined && { emailVerified }),
       },
     });
 
@@ -113,13 +124,13 @@ export async function PUT(request: Request, { params }: Params) {
     });
 
   } catch (error) {
-
-    console.error(error);
+    console.error("UPDATE SELLER ERROR:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to update seller",
+        message:
+          error instanceof Error ? error.message : "Update failed",
       },
       { status: 500 }
     );

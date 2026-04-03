@@ -2,12 +2,16 @@
 
 import Image from "next/image";
 import { UploadButton } from "@/lib/uploadthing";
+import { UseFormSetValue } from "react-hook-form";
+import { ProductInput } from "@/lib/validators/productSchema";
 
 type Props = {
   label: string;
   imageUrls: string[];
   setImageUrls: (urls: string[]) => void;
   endpoint: Endpoint;
+
+  setValue: UseFormSetValue<ProductInput>; // ✅ type-safe
 };
 
 export default function MultipleImageInput({
@@ -15,17 +19,21 @@ export default function MultipleImageInput({
   imageUrls,
   setImageUrls,
   endpoint,
+  setValue,
 }: Props) {
+
   function removeImage(index: number) {
     const updated = imageUrls.filter((_, i) => i !== index);
+
     setImageUrls(updated);
+    setValue("productImages", updated); // ✅ sync form
   }
 
   return (
     <div className="space-y-4">
       <label className="block text-sm font-medium">{label}</label>
 
-      {/* Uploaded Images Preview */}
+      {/* Preview */}
       <div className="flex gap-3 flex-wrap">
         {imageUrls.map((img, i) => (
           <div key={i} className="relative">
@@ -48,12 +56,16 @@ export default function MultipleImageInput({
         ))}
       </div>
 
-      {/* Upload Button */}
+      {/* Upload */}
       <UploadButton
         endpoint={endpoint}
         onClientUploadComplete={(res) => {
           const urls = res.map((item) => item.serverData.url);
-          setImageUrls([...imageUrls, ...urls]);
+
+          const updated = [...imageUrls, ...urls];
+
+          setImageUrls(updated);
+          setValue("productImages", updated); // ✅ MOST IMPORTANT
         }}
         onUploadError={(error: Error) => {
           alert(`Upload failed: ${error.message}`);

@@ -19,7 +19,7 @@ export interface ProductRequest {
   wholesaleQty?: number
 
   productStock: number
-  qty?: number
+  
 
   unit?: string
   tags: string[]

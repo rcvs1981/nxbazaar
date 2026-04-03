@@ -1,50 +1,114 @@
-import { auth } from "@/lib/auth";
-import {db} from "@/lib/db";
+import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { SellerSchema } from "@/lib/validations/seller";
+import { UserRole } from "@prisma/client";
+
+/* ---------------- CREATE SELLER ---------------- */
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
+    const body = await req.json();
 
-    if (!session?.user?.id) {
+    console.log("BODY:", body); // 🔥 debug
+
+    // ✅ Validate
+    const parsed = SellerSchema.safeParse(body);
+
+    if (!parsed.success) {
       return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
+        { error: parsed.error.format() },
+        { status: 400 }
       );
     }
 
-    const body = await req.json();
+    const data = parsed.data;
 
-    const { storeName, phone } = body;
+    // 🚨 HARD CHECK (most important)
+    if (!data.userId) {
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
+    }
 
-    const user = await db.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
+    // ✅ Check user exists
+    const existingUser = await db.user.findUnique({
+      where: { id: data.userId },
+      include: { sellerProfile: true },
     });
 
-    if (!user) {
+    if (!existingUser) {
       return NextResponse.json(
         { message: "User not found" },
         { status: 404 }
       );
     }
 
-    const seller = await db.seller.create({
-      data: {
-        storeName,
-        phone,
-        userId: user.id,
-      },
+    // ❌ prevent duplicate seller
+    if (existingUser.sellerProfile) {
+      return NextResponse.json(
+        { message: "Seller already exists" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ TRANSACTION (correct use)
+    const sellerProfile = await db.$transaction(async (tx) => {
+      // update user role
+      await tx.user.update({
+        where: { id: data.userId },
+        data: {
+          role: UserRole.SELLER,
+          emailVerified: true,
+        },
+      });
+
+      // create profile
+      return await tx.sellerProfile.create({
+        data: {
+          ...data,
+          turnover: data.turnover
+            ? parseFloat(data.turnover)
+            : null,
+        },
+      });
     });
 
-    return NextResponse.json(seller);
+    return NextResponse.json(sellerProfile, { status: 201 });
 
   } catch (error) {
-    console.error("SELLER ERROR:", error);
+    console.error("CREATE SELLER ERROR:", error);
 
     return NextResponse.json(
-      { message: "Failed to create seller" },
+      {
+        message: "Failed to create Seller",
+        error: error instanceof Error ? error.message : error,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/* ---------------- GET SELLERS ---------------- */
+
+export async function GET() {
+  try {
+    const sellers = await db.user.findMany({
+      where: { role: UserRole.SELLER },
+      include: { sellerProfile: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(sellers);
+
+  } catch (error) {
+    console.error("GET SELLERS ERROR:", error);
+
+    return NextResponse.json(
+      {
+        message: "Failed to fetch sellers",
+        error: error instanceof Error ? error.message : error,
+      },
       { status: 500 }
     );
   }

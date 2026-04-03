@@ -1,47 +1,36 @@
-import StepForm from "@/components/Onboarding/StepForm";
-import Steps from "@/components/Onboarding/Steps";
-import React from "react";
+import NewSellerForm from "@/components/backoffice/NewSellerForm";
+import { getUserById } from "@/actions/users";
+import { notFound } from "next/navigation";
 
-interface PageProps {
+type PageProps = {
   params: {
     id: string;
   };
-}
+};
 
-export default function Page({ params: { id } }: PageProps) {
-  const steps = [
-    {
-      number: 1,
-      title: "Basic Information",
-    },
-    {
-      number: 2,
-      title: "Farm Details",
-    },
-    {
-      number: 3,
-      title: "Additional Information",
-    },
-    {
-      number: 4,
-      title: "Summary",
-    },
-  ];
+export default async function Page({ params }: PageProps) {
+  let user = null;
+
+  try {
+    user = await getUserById(params.id);
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+  }
+
+  // 🔥 Better UX than plain error
+  if (!user) {
+    notFound();
+  }
 
   return (
-    <div className="bg-slate-200 dark:bg-slate-950 min-h-screen">
-      <div className="max-w-3xl my-6 mx-auto border border-slate-700 p-6 rounded-lg">
-        
-        {/* STEPS */}
-        <Steps steps={steps} />
-
-        <div className="w-full p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-6 md:p-8 dark:bg-gray-800 dark:border-gray-700">
-          
-          {/* FORM */}
-          <StepForm sellerId={id} />
-
-        </div>
+    <div className="flex flex-col gap-6 p-16">
+      <div className="max-w-4xl p-4 mx-auto">
+        <h2 className="text-xl font-semibold">
+          Hello {user.name}, Tell More About Yourself 👋
+        </h2>
       </div>
+
+      <NewSellerForm user={user} />
     </div>
   );
 }

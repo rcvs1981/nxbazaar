@@ -7,7 +7,6 @@ import logo from "../../public/limiLogo.webp";
 
 import {
   Boxes,
-  Building2,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
@@ -20,7 +19,6 @@ import {
   ScanSearch,
   Slack,
   Truck,
-  User,
   UserSquare2,
   Users2,
   Warehouse,
@@ -33,82 +31,156 @@ import {
 } from "@/components/ui/collapsible";
 
 import { usePathname, useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
-interface SidebarProps {
+/* ---------------- TYPES ---------------- */
+
+type SidebarProps = {
   showSidebar: boolean;
   setShowSidebar: (value: boolean) => void;
-}
+};
 
-export default function Sidebar({ showSidebar, setShowSidebar }: SidebarProps) {
-  const [openMenu, setOpenMenu] = useState(false);
+type Role = "ADMIN" | "SELLER" | "USER";
+
+type NavItem = {
+  title: string;
+  href: string;
+  icon: React.ElementType;
+};
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function Sidebar({
+  showSidebar,
+  setShowSidebar,
+}: SidebarProps) {
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
   const router = useRouter();
   const pathname = usePathname();
 
-  const sidebarLinks = [
+  const { data: session, status } = useSession();
+
+  if (status === "loading") return <p>Loading...</p>;
+
+  const role = session?.user?.role as Role | undefined;
+  const userStatus = session?.user?.status ?? false;
+
+  /* ---------------- LINKS ---------------- */
+
+  let sidebarLinks: NavItem[] = [
     { title: "Customers", icon: Users2, href: "/dashboard/customers" },
     { title: "Markets", icon: Warehouse, href: "/dashboard/markets" },
     { title: "Sellers", icon: UserSquare2, href: "/dashboard/sellers" },
     { title: "Orders", icon: Truck, href: "/dashboard/orders" },
     { title: "Sales", icon: Truck, href: "/dashboard/sales" },
-   
-   
     { title: "Wallet", icon: CircleDollarSign, href: "/dashboard/wallet" },
-    { title: "Seller Support", icon: HeartHandshake, href: "/dashboard/seller-support" },
+    {
+      title: "Sellers Support",
+      icon: HeartHandshake,
+      href: "/dashboard/seller-support",
+    },
     { title: "Settings", icon: LayoutGrid, href: "/dashboard/settings" },
     { title: "Online Store", icon: ExternalLink, href: "/" },
   ];
 
-  const catalogueLinks = [
+  let catalogueLinks: NavItem[] = [
     { title: "Products", icon: Boxes, href: "/dashboard/products" },
     { title: "Categories", icon: LayoutList, href: "/dashboard/categories" },
-     { title: "SubCategories", icon: LayoutList, href: "/dashboard/subcategories" },
     { title: "Coupons", icon: ScanSearch, href: "/dashboard/coupons" },
-    { title: "Banners", icon: MonitorPlay, href: "/dashboard/banners" },
+    { title: "Store Banners", icon: MonitorPlay, href: "/dashboard/banners" },
   ];
 
+  /* ---------------- ROLE BASED ---------------- */
+
+  if (role === "SELLER") {
+    sidebarLinks = [
+      { title: "Sales", icon: Truck, href: "/dashboard/sales" },
+      { title: "Wallet", icon: CircleDollarSign, href: "/dashboard/wallet" },
+      {
+        title: "Seller Support",
+        icon: HeartHandshake,
+        href: "/dashboard/seller-support",
+      },
+      { title: "Settings", icon: LayoutGrid, href: "/dashboard/settings" },
+      { title: "Online Store", icon: ExternalLink, href: "/" },
+    ];
+
+    catalogueLinks = [
+      { title: "Products", icon: Boxes, href: "/dashboard/products" },
+      { title: "Coupons", icon: ScanSearch, href: "/dashboard/coupons" },
+    ];
+  }
+
+  if (role === "USER") {
+    sidebarLinks = [
+      { title: "My Orders", icon: Truck, href: "/dashboard/orders" },
+      { title: "Profile", icon: Truck, href: "/dashboard/profile" },
+      { title: "Online Store", icon: ExternalLink, href: "/" },
+    ];
+
+    catalogueLinks = [];
+  }
+
+  if (role === "SELLER" && !userStatus) {
+    sidebarLinks = [];
+    catalogueLinks = [];
+  }
+
+  /* ---------------- LOGOUT ---------------- */
+
   async function handleLogout() {
+    await signOut({ redirect: false });
     router.push("/");
   }
+
+  /* ---------------- UI ---------------- */
 
   return (
     <div
       className={
         showSidebar
-          ? "sm:block mt-20 sm:mt-0 bg-white dark:bg-slate-800 w-64 h-screen fixed left-0 top-0 shadow-md overflow-y-scroll"
-          : "hidden sm:block mt-20 sm:mt-0 bg-white dark:bg-slate-800 w-64 h-screen fixed left-0 top-0 shadow-md overflow-y-scroll"
+          ? "sm:block mt-20 sm:mt-0 w-64 h-screen fixed left-0 top-0 overflow-y-scroll bg-white dark:bg-slate-800 shadow-md"
+          : "hidden sm:block mt-20 sm:mt-0 w-64 h-screen fixed left-0 top-0 overflow-y-scroll bg-white dark:bg-slate-800 shadow-md"
       }
     >
-      <Link onClick={() => setShowSidebar(false)} className="px-6 py-4" href="/dashboard">
+      {/* LOGO */}
+      <Link
+        onClick={() => setShowSidebar(false)}
+        href="/dashboard"
+        className="px-6 py-4"
+      >
         <Image src={logo} alt="logo" className="w-36" />
       </Link>
 
-      <div className="space-y-3 flex flex-col">
+      {/* DASHBOARD */}
+      <Link
+        href="/dashboard"
+        onClick={() => setShowSidebar(false)}
+        className={`flex items-center space-x-3 px-6 py-2 ${
+          pathname === "/dashboard"
+            ? "border-l-8 border-lime-500 text-lime-500"
+            : ""
+        }`}
+      >
+        <LayoutGrid />
+        <span>Dashboard</span>
+      </Link>
 
-        {/* Dashboard */}
-        <Link
-          href="/dashboard"
-          className={`flex items-center space-x-3 px-6 py-2 ${
-            pathname === "/dashboard" && "border-l-8 border-lime-500 text-lime-500"
-          }`}
-        >
-          <LayoutGrid />
-          <span>Dashboard</span>
-        </Link>
-
-        {/* Catalogue */}
+      {/* CATALOGUE */}
+      {catalogueLinks.length > 0 && (
         <Collapsible className="px-6">
-          <CollapsibleTrigger
-            onClick={() => setOpenMenu(!openMenu)}
-            className="flex items-center justify-between w-full py-2"
-          >
-            <div className="flex items-center space-x-3">
-              <Slack />
-              <span>Catalogue</span>
+          <CollapsibleTrigger onClick={() => setOpenMenu(!openMenu)}>
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center space-x-3">
+                <Slack />
+                <span>Catalogue</span>
+              </div>
+              {openMenu ? <ChevronDown /> : <ChevronRight />}
             </div>
-            {openMenu ? <ChevronDown /> : <ChevronRight />}
           </CollapsibleTrigger>
 
-          <CollapsibleContent className="py-3 pl-6 space-y-1">
+          <CollapsibleContent className="pl-6 py-2">
             {catalogueLinks.map((item, i) => {
               const Icon = item.icon;
               return (
@@ -116,8 +188,8 @@ export default function Sidebar({ showSidebar, setShowSidebar }: SidebarProps) {
                   key={i}
                   href={item.href}
                   onClick={() => setShowSidebar(false)}
-                  className={`flex items-center space-x-3 py-1 text-sm ${
-                    pathname === item.href && "text-lime-500"
+                  className={`flex items-center space-x-2 py-1 text-sm ${
+                    pathname === item.href ? "text-lime-500" : ""
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -127,36 +199,37 @@ export default function Sidebar({ showSidebar, setShowSidebar }: SidebarProps) {
             })}
           </CollapsibleContent>
         </Collapsible>
+      )}
 
-        {/* Sidebar Links */}
-        {sidebarLinks.map((item, i) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={i}
-              href={item.href}
-              onClick={() => setShowSidebar(false)}
-              className={`flex items-center space-x-3 px-6 py-2 ${
-                pathname === item.href && "border-l-8 border-lime-500 text-lime-500"
-              }`}
-            >
-              <Icon />
-              <span>{item.title}</span>
-            </Link>
-          );
-        })}
-
-        {/* Logout */}
-        <div className="px-6 py-4">
-          <button
-            onClick={handleLogout}
-            className="bg-lime-600 w-full rounded-md flex items-center justify-center space-x-3 px-6 py-3 text-white"
+      {/* LINKS */}
+      {sidebarLinks.map((item, i) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={i}
+            href={item.href}
+            onClick={() => setShowSidebar(false)}
+            className={`flex items-center space-x-3 px-6 py-2 ${
+              pathname === item.href
+                ? "border-l-8 border-lime-500 text-lime-500"
+                : ""
+            }`}
           >
-            <LogOut />
-            <span>Logout</span>
-          </button>
-        </div>
+            <Icon />
+            <span>{item.title}</span>
+          </Link>
+        );
+      })}
 
+      {/* LOGOUT */}
+      <div className="px-6 py-4">
+        <button
+          onClick={handleLogout}
+          className="bg-lime-600 text-white w-full py-2 rounded-md flex items-center justify-center space-x-2"
+        >
+          <LogOut />
+          <span>Logout</span>
+        </button>
       </div>
     </div>
   );

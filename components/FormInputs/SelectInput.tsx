@@ -33,31 +33,19 @@ export default function SelectInput<T extends FieldValues>({
         {label}
       </label>
 
-      <select
-        multiple={multiple}
-        className={`border rounded-lg p-2 w-full ${className}`}
-        
-        // 🔥 IMPORTANT FIX
-        {...register(name, {
-          onChange: (e) => {
-            if (multiple) {
-              const values = Array.from(
-                e.target.selectedOptions,
-                (option) => option.value
-              );
-              e.target.value = values;
-            }
-          },
-        })}
-      >
-        {!multiple && <option value="">Select option</option>}
+    <select
+  multiple={multiple}
+  className={`border rounded-lg p-2 w-full ${className}`}
+  {...register(name)}
+>
+  {!multiple && <option value="">Select option</option>}
 
-        {options.map((option, index) => (
-          <option key={`${option.value}-${index}`} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+  {options.map((option, index) => (
+    <option key={`${option.value}-${index}`} value={option.value}>
+      {option.label}
+    </option>
+  ))}
+</select>
 
       {errors[name] && (
         <p className="text-red-500 text-sm mt-1">

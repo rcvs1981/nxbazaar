@@ -2,20 +2,28 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const { nextUrl } = req;
+  const pathname = nextUrl.pathname;
 
-  // Admin only
-  if (pathname.startsWith("/dashboard")) {
-    if (req.auth?.user.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  const isLoggedIn = !!req.auth;
+  const role = req.auth?.user?.role;
+
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isSeller = pathname.startsWith("/seller");
+
+  // 🔒 Not logged in → redirect to login
+  if ((isDashboard || isSeller) && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Seller only
-  if (pathname.startsWith("/seller")) {
-    if (req.auth?.user.role !== "SELLER") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  // 🔐 Admin only routes
+  if (isDashboard && role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // 🔐 Seller only routes
+  if (isSeller && role !== "SELLER") {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();

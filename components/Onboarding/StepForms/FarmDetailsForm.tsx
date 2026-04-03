@@ -47,7 +47,7 @@ export default function FarmDetailsForm() {
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
         <TextInput
           label="What is the Size of Your Land in Accres"
-          name="landSize"
+          name="turnover"
           type="number"
           register={register}
           errors={errors}
@@ -55,7 +55,7 @@ export default function FarmDetailsForm() {
         />
         <TextInput
           label="What is your main Crop that you Cultivate"
-          name="mainCrop"
+          name="mainProduct"
           type="text"
           register={register}
           errors={errors}

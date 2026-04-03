@@ -3,13 +3,40 @@ import DataTable from "@/components/data-table-components/DataTable";
 import { columns } from "./columns";
 import { getSellers } from "@/actions/Seller";
 
-export default async function Page() {
+/* ---------------- TYPES ---------------- */
 
-  const sellers = await getSellers();
+type Seller = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: Date;
+  sellerProfile?: {
+    contactPerson: string;
+    phone: string;
+  } | null;
+};
+
+/* ---------------- PAGE ---------------- */
+
+export default async function Page() {
+  const response = await getSellers();
+
+  // ✅ Better error handling
+  if (!response.success) {
+    console.error("GET SELLERS ERROR:", response.error);
+
+    return (
+      <div className="p-4 text-red-500">
+        Failed to load sellers: {response.error}
+      </div>
+    );
+  }
+
+  const sellers: Seller[] = response.data ?? [];
 
   return (
     <div className="space-y-4">
-
       <PageHeader
         heading="Sellers"
         href="/dashboard/sellers/new"
@@ -21,7 +48,6 @@ export default async function Page() {
         columns={columns}
         filterKeys={["name"]}
       />
-
     </div>
   );
 }

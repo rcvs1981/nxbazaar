@@ -60,3 +60,12 @@ export async function deleteUser(id: string) {
     where: { id },
   });
 }
+
+export async function getUserById(id: string) {
+  return await db.user.findUnique({
+    where: { id },
+    include: {
+      farmerProfile: true,
+    },
+  });
+}
