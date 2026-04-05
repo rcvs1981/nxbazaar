@@ -5,12 +5,26 @@ import { auth } from "@/auth";
 import { Product } from "@prisma/client";
 import { CreateProductInput, ProductRequest } from "@/types/product";
 
+/* ================= COMMON SELECT ================= */
+
+const hsnSelect = {
+  id: true,
+  code: true,
+  title: true,
+  gstRate: true,
+};
+
+type Params = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
 /* ================= CREATE ================= */
 
 export async function createProduct(
   data: CreateProductInput
 ): Promise<ProductRequest> {
-
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -42,7 +56,7 @@ export async function createProduct(
 
     include: {
       category: true,
-      hsnCode: true,
+      hsnCode: { select: hsnSelect }, // ✅ FIX
       user: true,
     },
   });
@@ -54,7 +68,6 @@ export async function updateProduct(
   id: string,
   data: Partial<CreateProductInput>
 ): Promise<ProductRequest> {
-
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -77,7 +90,6 @@ export async function updateProduct(
           ? data.productImages[0]
           : data.imageUrl,
 
-      // ✅ FIXED
       gstRate: data.gstRate,
 
       category:
@@ -97,7 +109,7 @@ export async function updateProduct(
 
     include: {
       category: true,
-      hsnCode: true,
+      hsnCode: { select: hsnSelect }, // ✅ FIX
       user: true,
     },
   });
@@ -106,7 +118,6 @@ export async function updateProduct(
 /* ================= DELETE ================= */
 
 export async function deleteProduct(id: string) {
-
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -123,12 +134,12 @@ export async function deleteProduct(id: string) {
   return { success: true };
 }
 
+/* ================= GET PRODUCTS ================= */
+
 export async function getProducts(filters?: {
   userId?: string;
 }) {
-
   return await db.product.findMany({
-
     where: {
       userId: filters?.userId,
     },
@@ -139,9 +150,25 @@ export async function getProducts(filters?: {
 
     include: {
       category: true,
-      hsnCode: true,
+      hsnCode: { select: hsnSelect }, 
       user: true,
     },
-
   });
+}
+
+export async function getProduct(id: string) {
+  try {
+    const product = await db.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+         subCategory: true, 
+      },
+    });
+
+    return product;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 }

@@ -3,7 +3,6 @@ import { z } from "zod";
 /* ================= BASE SCHEMA ================= */
 
 const baseProductSchema = z.object({
-
   // ================= BASIC =================
   title: z.string().trim().min(2, "Title is required"),
 
@@ -14,15 +13,14 @@ const baseProductSchema = z.object({
   // ================= IMAGES =================
   imageUrl: z.string().optional(),
 
-  productImages: z.array(z.string())
+  productImages: z
+    .array(z.string())
     .min(1, "At least one product image is required"),
 
   // ================= CODES =================
   sku: z.string().optional(),
-
   barcode: z.string().optional(),
-
-  productCode: z.string().optional(),
+  productCode: z.string().nullable().optional(),
 
   // ================= UNIT =================
   unit: z.string().optional(),
@@ -35,12 +33,10 @@ const baseProductSchema = z.object({
   salePrice: z.coerce.number().optional(),
 
   wholesalePrice: z.coerce.number().optional(),
-
   wholesaleQty: z.coerce.number().optional(),
 
   // ================= STOCK =================
   productStock: z.coerce.number().min(0).optional(),
-
   qty: z.coerce.number().optional(),
 
   // ================= TAGS =================
@@ -48,34 +44,30 @@ const baseProductSchema = z.object({
 
   // ================= STATUS =================
   isActive: z.boolean().default(true),
-
   isWholesale: z.boolean().default(false),
 
   // ================= RELATIONS =================
   categoryId: z.string().min(1, "Category required"),
 
-  sellerId: z.string().optional(), // optional (admin use)
+  subCategoryId: z.string().min(1, "SubCategory required"), // ✅ FIXED
+
+  sellerId: z.string().optional(),
 
   // ================= TAX =================
-  hsnCodeId: z.string().optional(),
+  hsnCodeId: z.string().min(1, "HSN required"), // ✅ FIXED
 
   gstRate: z.coerce.number().optional(),
-
   cgst: z.coerce.number().optional(),
-
   sgst: z.coerce.number().optional(),
-
   igst: z.coerce.number().optional(),
-
 });
 
 /* ================= COMMON VALIDATIONS ================= */
 
 function applyCommonValidation(
-  schema: typeof baseProductSchema
+  schema: z.ZodTypeAny
 ) {
-  return schema.superRefine((data, ctx) => {
-
+  return schema.superRefine((data: any, ctx) => {
     // ✅ SALE PRICE
     if (
       data.salePrice !== undefined &&
@@ -126,24 +118,26 @@ function applyCommonValidation(
         code: z.ZodIssueCode.custom,
       });
     }
-
   });
 }
 
 /* ================= FINAL SCHEMAS ================= */
 
-// 🔥 CREATE
+// 🔥 CREATE (strict)
 export const productSchema = applyCommonValidation(baseProductSchema);
 
-// 🔥 UPDATE (partial but same rules)
+// 🔥 UPDATE (flexible + safe)
 export const updateProductSchema = applyCommonValidation(
-  baseProductSchema.partial()
+  baseProductSchema.extend({
+    productImages: z.array(z.string()).optional(), // ✅ IMPORTANT FIX
+    subCategoryId: z.string().optional(),
+    hsnCodeId: z.string().optional(),
+  }).partial()
 );
 
 /* ================= TYPES ================= */
 
 export type ProductInput = z.infer<typeof productSchema>;
-
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
 export const productsSchema = z.array(productSchema);

@@ -1,242 +1,215 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import ImageInput from "@/components/FormInputs/ImageInput"
-import SelectInput from "@/components/FormInputs/SelectInput"
-import SubmitButton from "@/components/FormInputs/SubmitButton"
-import TextareaInput from "@/components/FormInputs/TextAreaInput"
-import TextInput from "@/components/FormInputs/TextInput"
-import ToggleInput from "@/components/FormInputs/ToggleInput"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { useHsn } from "@/hooks/useHsn";
+
+import HsnSearchSelect from "@/components/FormInputs/HsnSearchSelect";
+import TextInput from "@/components/FormInputs/TextInput";
+import TextareaInput from "@/components/FormInputs/TextAreaInput";
+import SelectInput from "@/components/FormInputs/SelectInput";
+import ImageInput from "@/components/FormInputs/ImageInput";
+import ToggleInput from "@/components/FormInputs/ToggleInput";
+import SubmitButton from "@/components/FormInputs/SubmitButton";
+
+import { subCategorySchema } from "@/lib/validators/subcategory.schema";
 import {
   useCreateSubCategory,
   useUpdateSubCategory,
-} from "@/hooks/useSubCategoryMutation"
+} from "@/hooks/useSubCategoryMutation";
 
-import { Category } from "@/types/category"
-import { SubCategory } from "@prisma/client"
-import {
-  subCategorySchema,
-  SubCategoryInput,
-} from "@/lib/validators/subcategory.schema"
+/* ================= TYPES ================= */
+
+type CategoryOption = {
+  id: string;
+  title: string;
+};
+
+type SubCategoryData = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  categoryId: string;
+  hsnCodeId?: string | null;
+};
+
+type FormInput = {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  categoryId: string;
+  hsnCodeId?: string;
+};
+
+/* ================= PROPS ================= */
 
 interface Props {
-  categories: Category[]
-  updateData?: SubCategory
+  categories: CategoryOption[];
+  updateData?: SubCategoryData;
 }
 
-type ActionResult = {
-  success?: boolean
-  message?: string
-  error?: unknown
-}
-
-function extractMessage(error: unknown): string | null {
-  if (!error) return null
-
-  if (typeof error === "string") {
-    return error
-  }
-
-  if (typeof error === "object") {
-    const record = error as Record<string, unknown>
-
-    for (const value of Object.values(record)) {
-      if (typeof value === "string") {
-        return value
-      }
-
-      if (Array.isArray(value)) {
-        const firstText = value.find(
-          (item) => typeof item === "string"
-        )
-        if (typeof firstText === "string") {
-          return firstText
-        }
-      }
-
-      if (value && typeof value === "object") {
-        const nested = extractMessage(value)
-        if (nested) {
-          return nested
-        }
-      }
-    }
-  }
-
-  return null
-}
+/* ================= COMPONENT ================= */
 
 export default function SubCategoryForm({
   categories,
   updateData,
 }: Props) {
-  const router = useRouter()
-  const id = updateData?.id
 
-  const [imageUrl, setImageUrl] = useState<string>(
-    updateData?.imageUrl ?? ""
-  )
+  const router = useRouter();
+const [imageUrl, setImageUrl] = useState(updateData?.imageUrl ?? "");
+  const [selectedHsn, setSelectedHsn] = useState<HsnItem | null>(null);
 
-  const categoryOptions = [
-    { label: "Select Category", value: "" },
-    ...categories.map((category) => ({
-      label: category.title,
-      value: category.id,
-    })),
-  ]
+  const createMutation = useCreateSubCategory();
+  const updateMutation = useUpdateSubCategory();
 
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
+    reset,
     formState: { errors },
-  } = useForm<SubCategoryInput>({
+  } = useForm<FormInput>({
     resolver: zodResolver(subCategorySchema),
     defaultValues: {
       title: updateData?.title ?? "",
-     
       description: updateData?.description ?? "",
       imageUrl: updateData?.imageUrl ?? "",
       isActive: updateData?.isActive ?? true,
       categoryId: updateData?.categoryId ?? "",
+      hsnCodeId: updateData?.hsnCodeId ?? "",
     },
-  })
+  });
 
-  const createMutation = useCreateSubCategory()
-  const updateMutation = useUpdateSubCategory()
+  /* ================= CATEGORY OPTIONS ================= */
 
-  useEffect(() => {
-    setValue("imageUrl", imageUrl, {
-      shouldValidate: true,
-    })
-  }, [imageUrl, setValue])
+  const categoryOptions = categories.map((cat) => ({
+  label: cat.title,
+  value: cat.id,
+}));
 
-  async function onSubmit(data: SubCategoryInput) {
-    const formattedData: SubCategoryInput = {
+  /* ================= SUBMIT ================= */
+
+  function onSubmit(data: FormInput) {
+    const payload = {
       ...data,
-      imageUrl,
+      hsnCodeId: data.hsnCodeId || undefined,
+    };
+
+    if (updateData?.id) {
+      updateMutation.mutate(
+        { id: updateData.id, data: payload },
+        {
+          onSuccess: () => router.push("/dashboard/subcategories"),
+        }
+      );
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: () => {
+          reset();
+          router.push("/dashboard/subcategories");
+        },
+      });
     }
-
-    const result = (id
-      ? await updateMutation.mutateAsync({
-          id,
-          data: formattedData,
-        })
-      : await createMutation.mutateAsync(
-          formattedData
-        )) as ActionResult
-
-    if (result.success) {
-      toast.success(
-        result.message ??
-          (id
-            ? "Subcategory updated successfully"
-            : "Subcategory created successfully")
-      )
-
-      if (!id) {
-        reset()
-        setImageUrl("")
-      }
-
-      router.push("/dashboard/subcategories")
-      return
-    }
-
-    toast.error(
-      extractMessage(result.error) ??
-        result.message ??
-        "Failed to save subcategory"
-    )
   }
 
+  /* ================= UI ================= */
+
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="w-full max-w-4xl p-4 border rounded-lg shadow mx-auto my-3"
-    >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextInput
-          label="Subcategory Title"
-          name="title"
-          register={register}
-          errors={errors}
-        />
+<form
+  onSubmit={handleSubmit(onSubmit)}
+  onSubmit={handleSubmit(onSubmit)}
+  className="max-w-5xl mx-auto p-6 rounded-xl 
+  bg-transparent
+  border-2 border-orange-500 dark:border-orange-900
+  shadow-sm space-y-6"
+>
+  {/* HEADER */}
+ <div className="mb-5 p-0 pb-5 border-b-2 border-orange-500 dark:border-orange-900">
+  <h2 className="text-lg font-semibold leading-none text-gray-800 dark:text-gray-200">
+    {updateData ? "Update SubCategory" : "Create SubCategory"}
+  </h2>
+</div>
 
-       
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+  
+  <SelectInput
+    label="Category"
+    name="categoryId"
+    register={register}
+    errors={errors}
+    options={categoryOptions}
+  />
 
-        <TextareaInput
-          label="Subcategory Description"
-          name="description"
-          register={register}
-          errors={errors}
-        />
+  {/* HSN */}
+  <div className="flex flex-col h-full">
+    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      HSN Code
+    </label>
 
-        <div>
-          <SelectInput<SubCategoryInput>
-            label="Parent Category"
-            name="categoryId"
-            register={register}
-            options={categoryOptions}
-          />
-          {errors.categoryId && (
-            <p className="text-red-500 text-sm mt-1">
-              {String(errors.categoryId.message ?? "")}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <ImageInput
-            imageUrl={imageUrl}
-            setImageUrl={setImageUrl}
-            endpoint="categoryImageUploader"
-            label="Subcategory Image"
-          />
-
-          <input
-            type="hidden"
-            {...register("imageUrl")}
-          />
-
-          {errors.imageUrl && (
-            <p className="text-red-500 text-sm mt-1">
-              {String(errors.imageUrl.message ?? "")}
-            </p>
-          )}
-        </div>
-
-        <ToggleInput
-          label="Publish your Subcategory"
-          name="isActive"
-          trueTitle="Active"
-          falseTitle="Draft"
-          register={register}
-        />
-      </div>
-
-      <SubmitButton
-        isLoading={
-          createMutation.isPending ||
-          updateMutation.isPending
-        }
-        buttonTitle={
-          id
-            ? "Update Subcategory"
-            : "Create Subcategory"
-        }
-        loadingButtonTitle={
-          id
-            ? "Updating Subcategory..."
-            : "Creating Subcategory..."
-        }
+    <div className="flex-1">
+      <HsnSearchSelect
+        value={selectedHsn}
+        onChange={(item) => {
+          setSelectedHsn(item);
+          setValue("hsnCodeId", item.id);
+        }}
       />
-    </form>
-  )
+    </div>
+  </div>
+
+</div>
+  {/* TITLE + DESCRIPTION */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <TextInput
+      label="Title"
+      name="title"
+      register={register}
+      errors={errors}
+    />
+
+    <TextareaInput
+      label="Description"
+      name="description"
+      register={register}
+      errors={errors}
+    />
+  </div>
+
+  {/* IMAGE + STATUS */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <ImageInput
+      label="Image"
+      imageUrl={imageUrl}
+      setImageUrl={(url) => {
+        setImageUrl(url);
+        setValue("imageUrl", url);
+      }}
+    />
+
+    <ToggleInput
+      label="Active"
+      name="isActive"
+      register={register}
+    />
+  </div>
+
+  {/* SUBMIT */}
+  <div className="pt-6 border-t-2 border-orange-500 dark:border-orange-900">
+    <SubmitButton
+      isLoading={createMutation.isPending || updateMutation.isPending}
+      buttonTitle={
+        updateData ? "Update SubCategory" : "Create SubCategory"
+      }
+      loadingButtonTitle="Saving..."
+      className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+    />
+  </div>
+</form>
+);
 }

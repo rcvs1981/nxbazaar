@@ -3,7 +3,28 @@ import { NextResponse } from "next/server";
 import { productSchema } from "@/lib/validators/productSchema";
 import { auth } from "@/auth";
 
-/* ================= GET ALL PRODUCTS ================= */
+/* ================= HELPER ================= */
+
+async function generateUniqueBarcode() {
+  let barcode = "";
+  let exists = true;
+
+  while (exists) {
+    barcode = Math.floor(
+      100000000000 + Math.random() * 900000000000
+    ).toString();
+
+    const found = await db.product.findUnique({
+      where: { barcode },
+    });
+
+    if (!found) exists = false;
+  }
+
+  return barcode;
+}
+
+/* ================= GET ================= */
 
 export async function GET() {
   try {
@@ -11,6 +32,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       include: {
         category: true,
+        subCategory: true, // ✅ FIX
         hsnCode: true,
         user: true,
       },
@@ -27,11 +49,10 @@ export async function GET() {
   }
 }
 
-/* ================= CREATE PRODUCT ================= */
+/* ================= CREATE ================= */
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    // ✅ AUTH CHECK
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -41,11 +62,11 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // ✅ BODY PARSE + VALIDATION
     const json = await request.json();
     const body = productSchema.parse(json);
 
-    // ✅ SAFE SLUG (fallback)
+    /* ================= SLUG ================= */
+
     const slug =
       body.slug ||
       body.title
@@ -55,7 +76,8 @@ export async function POST(request: Request): Promise<Response> {
         "-" +
         Date.now();
 
-    // ✅ DUPLICATE CHECK
+    /* ================= DUPLICATE SLUG ================= */
+
     const existingProduct = await db.product.findUnique({
       where: { slug },
     });
@@ -67,28 +89,47 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // ✅ CREATE PRODUCT
+    /* ================= BARCODE FIX ================= */
+
+    let barcode = body.barcode;
+
+    if (barcode) {
+      const exists = await db.product.findUnique({
+        where: { barcode },
+      });
+
+      if (exists) {
+        return NextResponse.json(
+          { message: "Barcode already exists" },
+          { status: 409 }
+        );
+      }
+    } else {
+      barcode = await generateUniqueBarcode(); // ✅ AUTO GENERATE
+    }
+
+    /* ================= CREATE ================= */
+
     const product = await db.product.create({
       data: {
         title: body.title,
         slug,
 
-        description: body.description,
+        description: body.description ?? null,
 
-        barcode: body.barcode,
-        sku: body.sku,
-        productCode: body.productCode,
+        barcode, // ✅ FIXED
+        sku: body.sku ?? null,
+        productCode: body.productCode ?? null,
 
         productPrice: body.productPrice,
-        salePrice: body.salePrice,
+        salePrice: body.salePrice ?? null,
 
         wholesalePrice: body.wholesalePrice ?? null,
         wholesaleQty: body.wholesaleQty ?? null,
 
-        productStock: body.productStock,
-        
+        productStock: body.productStock ?? null,
 
-        unit: body.unit,
+        unit: body.unit ?? null,
 
         tags: body.tags ?? [],
 
@@ -98,7 +139,8 @@ export async function POST(request: Request): Promise<Response> {
         productImages: body.productImages,
         imageUrl: body.productImages?.[0] ?? null,
 
-        // ✅ RELATIONS
+        /* ================= RELATIONS ================= */
+
         user: {
           connect: { id: session.user.id },
         },
@@ -107,6 +149,10 @@ export async function POST(request: Request): Promise<Response> {
           ? { connect: { id: body.categoryId } }
           : undefined,
 
+        subCategory: body.subCategoryId
+          ? { connect: { id: body.subCategoryId } }
+          : undefined, // ✅ FIXED
+
         hsnCode: body.hsnCodeId
           ? { connect: { id: body.hsnCodeId } }
           : undefined,
@@ -114,13 +160,14 @@ export async function POST(request: Request): Promise<Response> {
 
       include: {
         category: true,
+        subCategory: true, // ✅ FIX
         hsnCode: true,
         user: true,
       },
     });
 
     return NextResponse.json(product);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("CREATE PRODUCT ERROR ❌", error);
 
     return NextResponse.json(

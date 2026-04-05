@@ -50,7 +50,10 @@ export default function CustomerForm({ user }: Props) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="w-full max-w-3xl mx-auto p-6  rounded-lg shadow"
+      className="max-w-4xl mx-auto p-6 rounded-lg 
+bg-orange-500 dark:bg-orange-500 
+border border-orange-300 dark:border-orange-900 
+text-foreground"
     >
 
       <h2 className="text-xl font-semibold mb-6">

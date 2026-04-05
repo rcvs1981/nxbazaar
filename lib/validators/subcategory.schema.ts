@@ -6,6 +6,7 @@ export const subCategorySchema = z.object({
   description: z.string().min(5, "Description is required"),
   isActive: z.boolean(),
   categoryId: z.string().min(1, "Category is required"),
+  hsnCodeId: z.string().optional().or(z.literal("")),
 })
 
 export type SubCategoryInput = z.infer<typeof subCategorySchema>

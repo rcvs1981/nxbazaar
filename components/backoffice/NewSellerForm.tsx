@@ -126,7 +126,10 @@ export default function NewSellerForm({ user, isEdit }: Props) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="w-full max-w-5xl p-4 bg-orange-400 border rounded-lg shadow mx-auto my-3"
+      className="max-w-4xl mx-auto p-6 rounded-lg 
+bg-orange-500 dark:bg-orange-500 
+border border-orange-300 dark:border-orange-900 
+text-foreground"
     >
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
 

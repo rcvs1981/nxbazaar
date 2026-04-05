@@ -1,6 +1,6 @@
 import FilterComponent from "@/components/frontend/Filter/FilterComponent";
-import { getcategories } from "@/actions/categories";
-import { getproducts } from "@/actions/products";
+import { getCategories } from "@/actions/category";
+import { getProducts } from "@/actions/products";
 
 // ✅ Params Types
 type PageProps = {

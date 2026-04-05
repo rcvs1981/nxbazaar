@@ -87,6 +87,7 @@ export default function Sidebar({
   let catalogueLinks: NavItem[] = [
     { title: "Products", icon: Boxes, href: "/dashboard/products" },
     { title: "Categories", icon: LayoutList, href: "/dashboard/categories" },
+     { title: "Sub-Categories", icon: LayoutList, href: "/dashboard/subcategories" },
     { title: "Coupons", icon: ScanSearch, href: "/dashboard/coupons" },
     { title: "Store Banners", icon: MonitorPlay, href: "/dashboard/banners" },
   ];
@@ -137,13 +138,18 @@ export default function Sidebar({
   /* ---------------- UI ---------------- */
 
   return (
-    <div
-      className={
-        showSidebar
-          ? "sm:block mt-20 sm:mt-0 w-64 h-screen fixed left-0 top-0 overflow-y-scroll bg-white dark:bg-slate-800 shadow-md"
-          : "hidden sm:block mt-20 sm:mt-0 w-64 h-screen fixed left-0 top-0 overflow-y-scroll bg-white dark:bg-slate-800 shadow-md"
-      }
-    >
+  <div
+  className={`${
+    showSidebar ? "block" : "hidden"
+  } sm:block fixed left-0 top-0 z-40 w-64 h-screen 
+  mt-16 sm:mt-0
+  overflow-y-auto
+  bg-orange-200 dark:bg-orange-500
+  border-r border-orange-200 dark:border-orange-400
+  shadow-sm
+  transition-all duration-300
+  scrollbar-thin scrollbar-thumb-orange-300 dark:scrollbar-thumb-orange-700`}
+>
       {/* LOGO */}
       <Link
         onClick={() => setShowSidebar(false)}

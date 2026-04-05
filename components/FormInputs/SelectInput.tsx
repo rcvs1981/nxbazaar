@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
+import {
+  FieldErrors,
+  FieldValues,
+  Path,
+  UseFormRegister,
+} from "react-hook-form";
 
 type Option = {
   label: string;
@@ -33,21 +38,29 @@ export default function SelectInput<T extends FieldValues>({
         {label}
       </label>
 
-    <select
-  multiple={multiple}
-  className={`border rounded-lg p-2 w-full ${className}`}
-  {...register(name)}
->
-  {!multiple && <option value="">Select option</option>}
+      <select
+        multiple={multiple}
+        className={`border rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-orange-500 ${className}`}
+        {...register(name, {
+          // ✅ multiple select handling
+          setValueAs: (value) => {
+            if (multiple) {
+              return Array.from(value as unknown as string[]);
+            }
+            return value;
+          },
+        })}
+      >
+        {!multiple && <option value="">Select option</option>}
 
-  {options.map((option, index) => (
-    <option key={`${option.value}-${index}`} value={option.value}>
-      {option.label}
-    </option>
-  ))}
-</select>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
 
-      {errors[name] && (
+      {errors?.[name] && (
         <p className="text-red-500 text-sm mt-1">
           {String(errors[name]?.message)}
         </p>

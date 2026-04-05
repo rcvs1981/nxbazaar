@@ -39,42 +39,41 @@ export async function GET(
 }
 
 
-
-
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // ✅ FIXED
+
     const body = await req.json();
 
-    const product = await updateProduct(params.id, body);
+    const validatedData = updateProductSchema.parse(body);
 
-    return NextResponse.json(product);
+    console.log("Updating ID:", id); // ✅ debug
+
+    const updatedProduct = await db.product.update({
+      where: {
+        id, // ✅ अब सही आएगा
+      },
+      data: {
+        title: validatedData.title,
+        description: validatedData.description,
+
+        productPrice: validatedData.productPrice,
+        salePrice: validatedData.salePrice,
+
+        categoryId: validatedData.categoryId,
+        subCategoryId: validatedData.subCategoryId,
+
+        imageUrl: validatedData.imageUrl,
+        isActive: validatedData.isActive,
+      },
+    });
+
+    return Response.json(updatedProduct);
   } catch (error) {
-    console.error("UPDATE ERROR ❌", error);
-
-    return NextResponse.json(
-      { message: "Failed to update product" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    await deleteProduct(params.id);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("DELETE ERROR ❌", error);
-
-    return NextResponse.json(
-      { message: "Failed to delete product" },
-      { status: 500 }
-    );
+    console.log("UPDATE ERROR ❌", error);
+    return Response.json({ error: "Update failed" }, { status: 500 });
   }
 }

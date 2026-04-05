@@ -1,24 +1,50 @@
-import { NextResponse } from "next/server"
-import {db} from "@/lib/db"
+import { db } from "@/lib/db";
+import { NextResponse } from "next/server";
 
-export async function POST(req:Request){
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search")?.trim() || "";
 
-const body = await req.json()
+    const hsn = await db.hsnCode.findMany({
+      where: search
+        ? {
+            OR: [
+              {
+                code: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                title: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {},
+      select: {
+        id: true,
+        code: true,
+        title: true,     // ✅ include title
+        gstRate: true,
+      },
+      
+      orderBy: {
+        code: "asc", // ✅ sorted
+      },
+    });
 
-const hsn = await db.hsnCode.create({
-data:body
-})
+    return NextResponse.json(hsn, { status: 200 });
 
-return NextResponse.json(hsn)
+  } catch (error) {
+    console.error("HSN API Error:", error);
 
-}
-
-export async function GET(){
-
-const data = await db.hsnCode.findMany({
-orderBy:{hsnCode:"asc"}
-})
-
-return NextResponse.json(data)
-
+    return NextResponse.json(
+      { message: "Something went wrong" },
+      { status: 500 }
+    );
+  }
 }

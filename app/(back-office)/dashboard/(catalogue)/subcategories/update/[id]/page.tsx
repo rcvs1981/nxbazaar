@@ -1,30 +1,28 @@
-import {db} from "@/lib/db"
-import { getCategories } from "@/actions/category"
-import SubCategoryForm from "@/components/backoffice/Forms/SubCategoryForm"
-import { notFound } from "next/navigation"
+import SubCategoryForm from "@/components/backoffice/Forms/SubCategoryForm";
+import { getCategories } from "@/actions/category";
+import { getSubCategoryById } from "@/actions/subcategory";
+import { getHsnCodes } from "@/actions/hsnCode";
 
-interface Props {
-  params: Promise<{ id: string }>
-}
+type PageProps = {
+  params: Promise<{
+    id: string;
+  }>;
+};
 
-export default async function UpdateSubCategoryPage({ params }: Props) {
-  const { id } = await params
+export default async function UpdateSubCategoryPage({ params }: PageProps) {
+  const { id } = await params;
 
-  const [subcategory, categories] = await Promise.all([
-    db.subCategory.findUnique({
-      where: { id },
-    }),
+  const [categories, subCategory, hsnCodes] = await Promise.all([
     getCategories(),
-  ])
-
-  if (!subcategory) {
-    notFound()
-  }
+    getSubCategoryById(id),
+    getHsnCodes(""),
+  ]);
 
   return (
     <SubCategoryForm
-      updateData={subcategory}
       categories={categories}
+      hsnCodes={hsnCodes}
+      updateData={subCategory}
     />
-  )
+  );
 }

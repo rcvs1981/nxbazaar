@@ -44,11 +44,14 @@ export default function Navbar({
   }
 
   return (
-    <div className="flex items-center justify-between bg-white dark:bg-slate-500 h-20 py-4 fixed top-0 w-full px-6 z-50 sm:pr-[20rem]">
-
+ <div className="flex items-center justify-between
+bg-orange-100 dark:bg-slate-900
+h-16 py-4
+border-b border-orange-200 dark:border-orange-700
+fixed top-0 w-full px-6 z-30 lg:pl-64">
       {/* Logo (Mobile) */}
       <Link href="/dashboard" className="sm:hidden font-bold text-lg">
-        Limi
+        nbr
       </Link>
 
       {/* Sidebar Toggle */}

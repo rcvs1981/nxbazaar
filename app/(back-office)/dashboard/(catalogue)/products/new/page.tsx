@@ -1,7 +1,7 @@
 import FormHeader from "@/components/backoffice/FormHeader";
 import NewProductForm from "@/components/backoffice/NewProductForm";
 import { getCategories } from "@/actions/category";
-import { getHsnCodes } from "@/actions/hsnCode";
+import { getSubCategories } from "@/actions/subcategory";
 
 /* ================= TYPES ================= */
 
@@ -10,33 +10,53 @@ type SelectOption = {
   title: string;
 };
 
+type SubCategoryOption = {
+  id: string;
+  title: string;
+  categoryId: string;
+  hsnCode: {
+    id: string;
+    code: string;
+    gstRate: number;
+  } | null;
+};
+
 /* ================= PAGE ================= */
 
 export default async function NewProduct() {
-
   const categoriesData = await getCategories();
-  const hsnCodesData = await getHsnCodes();
+  const subCategoriesData = await getSubCategories();
+
+  /* ================= MAP DATA ================= */
 
   const categories: SelectOption[] = categoriesData.map((cat) => ({
     id: cat.id,
     title: cat.title,
   }));
 
-  const hsnCodes: SelectOption[] = hsnCodesData.map((h) => ({
-    id: h.id,
-    title: h.code,
+  const subCategories: SubCategoryOption[] = subCategoriesData.map((sub) => ({
+    id: sub.id,
+    title: sub.title,
+    categoryId: sub.categoryId,
+    hsnCode: sub.hsnCode
+      ? {
+          id: sub.hsnCode.id,
+          code: sub.hsnCode.code,
+          gstRate: sub.hsnCode.gstRate,
+        }
+      : null,
   }));
+
+  /* ================= UI ================= */
 
   return (
     <div>
-
       <FormHeader title="New Product" />
 
       <NewProductForm
         categories={categories}
-        hsnCodes={hsnCodes} // ✅ FIX
+        subCategories={subCategories}
       />
-
     </div>
   );
 }

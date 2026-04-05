@@ -1,20 +1,26 @@
 import FormHeader from "@/components/backoffice/FormHeader";
 import NewProductForm from "@/components/backoffice/NewProductForm";
-import { getProduct, getCategories } from "@/lib/getData";
+import { getProduct } from "@/actions/products";
+import { getCategories } from "@/actions/category";
+import { getSubCategories } from "@/actions/subcategory";
 import React from "react";
 import { Product, Category } from "@prisma/client";
 
 type Params = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export default async function UpdateProduct({ params }: Params) {
-  const { id } = params;
+  const { id } = await params; // ✅ FIX
 
   const product: Product = await getProduct(id);
   const categories: Category[] = await getCategories();
+const subCategories = await getSubCategories();
+  if (!product) {
+    return <div>Product not found</div>;
+  }
 
   return (
     <div>
@@ -23,6 +29,7 @@ export default async function UpdateProduct({ params }: Params) {
       <NewProductForm
         updateData={product}
         categories={categories}
+        subCategories={subCategories}
       />
     </div>
   );

@@ -3,17 +3,30 @@ import { db } from "@/lib/db";
 import { subCategorySchema } from "@/lib/validators/subcategory.schema";
 import { generateSlug } from "@/lib/utils/Slug";
 
-// ================= CREATE =================
+/* ================= TYPES ================= */
+
+type SubCategoryInput = {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  categoryId: string;
+  hsnCodeId?: string;
+};
+
+/* ================= CREATE ================= */
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const validatedData = subCategorySchema.parse(body);
-    const slug = generateSlug(validatedData.title);
+    const data: SubCategoryInput = subCategorySchema.parse(body);
 
-    // Check category exists
+    const slug = generateSlug(data.title);
+
+    /* ---------- CATEGORY CHECK ---------- */
     const categoryExists = await db.category.findUnique({
-      where: { id: validatedData.categoryId },
+      where: { id: data.categoryId },
     });
 
     if (!categoryExists) {
@@ -23,7 +36,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check slug uniqueness
+    /* ---------- SLUG CHECK ---------- */
     const existing = await db.subCategory.findUnique({
       where: { slug },
     });
@@ -35,58 +48,92 @@ export async function POST(req: Request) {
       );
     }
 
+    /* ---------- CREATE ---------- */
     const subCategory = await db.subCategory.create({
       data: {
-        ...validatedData,
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        isActive: data.isActive,
         slug,
+
+        category: {
+          connect: { id: data.categoryId },
+        },
+
+       hsnCode: data.hsnCodeId && data.hsnCodeId !== ""
+  ? { connect: { id: data.hsnCodeId } }
+  : undefined,
+      },
+
+      include: {
+        category: true,
+        hsnCode: true,
       },
     });
 
     return NextResponse.json(subCategory, { status: 201 });
-  } catch (error: any) {
+
+  } catch (error) {
     return NextResponse.json(
-      { message: error.message || "Failed to create subcategory" },
+      { message: "Failed to create subcategory" },
       { status: 500 }
     );
   }
 }
 
-// ================= GET ALL =================
-export async function GET() {
+/* ================= GET ================= */
+
+
+
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const categoryId = searchParams.get("categoryId");
+
     const subCategories = await db.subCategory.findMany({
-      include: {
-        category: true,
-        products: true,
+      where: {
+        categoryId: categoryId || undefined,
       },
-      orderBy: { createdAt: "desc" },
+      include: {
+        hsnCode: true, 
+      },
     });
 
     return NextResponse.json(subCategories);
   } catch (error) {
+    console.log(error);
     return NextResponse.json(
-      { message: "Failed to fetch subcategories" },
+      { message: "Error fetching subcategories" },
       { status: 500 }
     );
   }
 }
 
-// ================= BULK DELETE =================
+/* ================= DELETE ================= */
+
 export async function DELETE(req: Request) {
   try {
-    const body = await req.json();
-    const { ids } = body;
+    const body: { ids: string[] } = await req.json();
+
+    if (!body.ids || body.ids.length === 0) {
+      return NextResponse.json(
+        { message: "No IDs provided" },
+        { status: 400 }
+      );
+    }
 
     await db.subCategory.deleteMany({
       where: {
-        id: { in: ids },
+        id: { in: body.ids },
       },
     });
 
     return NextResponse.json({
       message: "Selected subcategories deleted",
     });
-  } catch (error) {
+
+  } catch {
     return NextResponse.json(
       { message: "Bulk delete failed" },
       { status: 500 }

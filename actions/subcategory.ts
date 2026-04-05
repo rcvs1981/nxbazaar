@@ -85,7 +85,30 @@ export async function deleteMultipleSubCategories(ids: string[]) {
 export async function getSubCategories() {
   const data = await db.subCategory.findMany({
     orderBy: { createdAt: "desc" },
-    include: { category: true },
+    include: { 
+      category: true ,
+       hsnCode: true
+    },
   })
   return data
+}
+
+
+export async function getSubCategoryById(id: string) {
+  return await db.subCategory.findUnique({
+    where: { id },
+    include: {
+      category: true,
+      hsnCode: true,
+    },
+  });
+}
+
+export async function getSubCategoriesByCategory(categoryId: string) {
+  return await db.subCategory.findMany({
+    where: { categoryId },
+    include: {
+      hsnCode: true, // ✅ IMPORTANT
+    },
+  });
 }
