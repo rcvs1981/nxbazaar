@@ -11,25 +11,33 @@ import "swiper/css/thumbs";
 
 import { FreeMode, Navigation, Thumbs } from "swiper/modules";
 
+type Props = {
+  productImages?: string[];
+  thumbnail?: string;
+};
+
 export default function ProductImageCarousel({
   productImages = [],
   thumbnail,
-}) {
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+}: Props) {
+  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const images = productImages?.length ? productImages : [thumbnail];
+  const images =
+    productImages?.length > 0
+      ? productImages
+      : thumbnail
+      ? [thumbnail]
+      : ["/placeholder.png"]; // fallback
 
   return (
-    <div className="col-span-3">
+    <div className="col-span-3 space-y-3">
 
-      {/* Main Slider */}
-
+      {/* 🔥 Main Slider */}
       <Swiper
-        style={{
-          "--swiper-navigation-color": "#fff",
-        }}
         spaceBetween={10}
         navigation
+        onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
         thumbs={{
           swiper:
             thumbsSwiper && !thumbsSwiper.destroyed
@@ -41,19 +49,20 @@ export default function ProductImageCarousel({
       >
         {images.map((image, i) => (
           <SwiperSlide key={i}>
-            <Image
-              src={image}
-              alt="Product Image"
-              width={600}
-              height={600}
-              className="w-full h-auto object-cover"
-            />
+            <div className="relative overflow-hidden group">
+              <Image
+                src={image}
+                alt="Product Image"
+                width={600}
+                height={600}
+                className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>
 
-      {/* Thumbnail Slider */}
-
+      {/* 🔥 Thumbnail Slider */}
       <Swiper
         onSwiper={setThumbsSwiper}
         spaceBetween={10}
@@ -61,21 +70,27 @@ export default function ProductImageCarousel({
         freeMode
         watchSlidesProgress
         modules={[FreeMode, Thumbs]}
-        className="mt-3"
       >
         {images.map((image, i) => (
           <SwiperSlide key={i}>
-            <Image
-              src={image}
-              alt="Thumbnail"
-              width={120}
-              height={120}
-              className="cursor-pointer rounded-md border"
-            />
+            <div
+              className={`p-[2px] rounded-md cursor-pointer ${
+                activeIndex === i
+                  ? "border-2 border-orange-500"
+                  : "border"
+              }`}
+            >
+              <Image
+                src={image}
+                alt="Thumbnail"
+                width={120}
+                height={120}
+                className="rounded-md object-cover"
+              />
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>
-
     </div>
   );
 }

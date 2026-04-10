@@ -3,7 +3,7 @@
 import React, { type ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
-
+import DeliverWrapper from "@/components/location/DeliverWrapper";
 import { Provider } from "react-redux";
 import { store } from "@/redux/store";
 
@@ -66,7 +66,9 @@ export default function Providers({ children }: ProvidersProps) {
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
           <Provider store={store}>
+             <DeliverWrapper>
             {children}
+            </DeliverWrapper>
           </Provider>
 
           {process.env.NODE_ENV === "development" && (

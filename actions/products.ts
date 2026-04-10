@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { Product } from "@prisma/client";
 import { CreateProductInput, ProductRequest } from "@/types/product";
 
+import { productVariantSchema } from "../validators/productVariant.schema";
 /* ================= COMMON SELECT ================= */
 
 const hsnSelect = {
@@ -12,12 +13,6 @@ const hsnSelect = {
   code: true,
   title: true,
   gstRate: true,
-};
-
-type Params = {
-  params: Promise<{
-    id: string;
-  }>;
 };
 
 /* ================= CREATE ================= */
@@ -28,7 +23,6 @@ export async function createProduct(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // slug check
   const exists = await db.product.findUnique({
     where: { slug: data.slug },
   });
@@ -38,7 +32,6 @@ export async function createProduct(
   return await db.product.create({
     data: {
       ...data,
-
       imageUrl: data.productImages?.[0] ?? data.imageUrl,
 
       user: {
@@ -56,7 +49,8 @@ export async function createProduct(
 
     include: {
       category: true,
-      hsnCode: { select: hsnSelect }, // ✅ FIX
+      subCategory: true,
+      hsnCode: { select: hsnSelect },
       user: true,
     },
   });
@@ -99,6 +93,13 @@ export async function updateProduct(
           ? { connect: { id: data.categoryId } }
           : undefined,
 
+      subCategory:
+        data.subCategoryId === null
+          ? { disconnect: true }
+          : data.subCategoryId
+          ? { connect: { id: data.subCategoryId } }
+          : undefined,
+
       hsnCode:
         data.hsnCodeId === null
           ? { disconnect: true }
@@ -109,7 +110,8 @@ export async function updateProduct(
 
     include: {
       category: true,
-      hsnCode: { select: hsnSelect }, // ✅ FIX
+      subCategory: true,
+      hsnCode: { select: hsnSelect },
       user: true,
     },
   });
@@ -134,7 +136,7 @@ export async function deleteProduct(id: string) {
   return { success: true };
 }
 
-/* ================= GET PRODUCTS ================= */
+/* ================= GET ALL PRODUCTS ================= */
 
 export async function getProducts(filters?: {
   userId?: string;
@@ -150,25 +152,121 @@ export async function getProducts(filters?: {
 
     include: {
       category: true,
-      hsnCode: { select: hsnSelect }, 
+      subCategory: true,
+      hsnCode: { select: hsnSelect },
       user: true,
     },
   });
 }
 
+/* ================= GET SINGLE PRODUCT ================= */
+
 export async function getProduct(id: string) {
   try {
-    const product = await db.product.findUnique({
+    return await db.product.findUnique({
       where: { id },
       include: {
         category: true,
-         subCategory: true, 
+        subCategory: true,
+        hsnCode: { select: hsnSelect },
+        user: true,
       },
     });
-
-    return product;
   } catch (error) {
     console.log(error);
     return null;
   }
+}
+
+/* ================= GET PRODUCT BY SLUG ================= */
+
+export async function getProductBySlug(slug: string) {
+  try {
+    return await db.product.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+        subCategory: true,
+        hsnCode: { select: hsnSelect },
+        user: true,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+"use server";
+
+import { db } from "@/lib/db";
+import { productTranslationSchema } from "@/lib/validators/productTranslationSchema";
+
+export async function upsertProductTranslation(data: unknown) {
+  const parsed = productTranslationSchema.parse(data);
+
+  const existing = await db.productTranslation.findUnique({
+    where: {
+      productId_locale: {
+        productId: parsed.productId,
+        locale: parsed.locale,
+      },
+    },
+  });
+
+  if (existing) {
+    return await db.productTranslation.update({
+      where: { id: existing.id },
+      data: {
+        title: parsed.title,
+        description: parsed.description,
+      },
+    });
+  }
+
+  return await db.productTranslation.create({
+    data: parsed,
+  });
+}
+
+"use server";
+
+
+
+export async function createProductVariant(data: unknown) {
+  const parsed = productVariantSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.flatten(),
+    };
+  }
+
+  const variant = await db.productVariant.create({
+    data: {
+      ...parsed.data,
+
+      attributes: parsed.data.attributes
+        ? {
+            create: parsed.data.attributes,
+          }
+        : undefined,
+
+      wholesalePricing: parsed.data.wholesalePricing
+        ? {
+            create: parsed.data.wholesalePricing,
+          }
+        : undefined,
+    },
+    include: {
+      attributes: true,
+      wholesalePricing: true,
+    },
+  });
+
+  return {
+    success: true,
+    data: variant,
+  };
 }

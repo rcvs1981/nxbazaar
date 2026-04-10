@@ -10,55 +10,65 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/redux/store";
 
 interface ProductType {
-id: string;
-title: string;
-slug: string;
-imageUrl: string;
-salePrice: number;
+  id: string;
+  title: string;
+  slug: string;
+  imageUrl: string;
+  salePrice: number;
 }
 
 interface ProductProps {
-product: ProductType;
+  product: ProductType;
 }
 
 export default function Product({ product }: ProductProps) {
-const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
 
-function handleAddToCart() {
-dispatch(addToCart(product));
-toast.success("Item added Successfully");
-}
+  function handleAddToCart() {
+    dispatch(
+      addToCart({
+        id: product.id,
+        title: product.title,
+        salePrice: Number(product.salePrice), // ✅ safe
+        imageUrl: product.imageUrl,
+        vendorId: "", // ✅ अगर है तो डालो, नहीं तो empty
+      })
+    );
 
-return ( <div className="rounded-lg mr-3 bg-white dark:bg-slate-900 overflow-hidden border shadow">
-<Link href={`/products/${product.slug}`}> <Image
-       src={product.imageUrl}
-       alt={product.title}
-       width={556}
-       height={556}
-       className="w-full h-48 object-cover"
-     /> </Link>
+    toast.success("Item added Successfully");
+  }
 
-  <div className="px-4">
-    <Link href={`/products/${product.slug}`}>
-      <h2 className="text-center dark:text-slate-200 text-slate-800 my-2 font-semibold">
-        {product.title}
-      </h2>
-    </Link>
+  return (
+    <div className="rounded-lg mr-3 bg-white dark:bg-slate-900 overflow-hidden border shadow">
+      <Link href={`/products/${product.slug}`}>
+        <Image
+          src={product.imageUrl}
+          alt={product.title}
+          width={556}
+          height={556}
+          className="w-full h-48 object-cover"
+        />
+      </Link>
 
-    <div className="flex items-center justify-between gap-2 pb-3 dark:text-slate-200 text-slate-800">
-      <p>UGX {product.salePrice}</p>
+      <div className="px-4">
+        <Link href={`/products/${product.slug}`}>
+          <h2 className="text-center dark:text-slate-200 text-slate-800 my-2 font-semibold">
+            {product.title}
+          </h2>
+        </Link>
 
-      <button
-        onClick={handleAddToCart}
-        className="flex items-center space-x-2 bg-lime-600 px-4 py-2 rounded-md text-white"
-      >
-        <BaggageClaim />
-        <span>Add</span>
-      </button>
+        <div className="flex items-center justify-between gap-2 pb-3 dark:text-slate-200 text-slate-800">
+          <p>UGX {product.salePrice}</p>
+
+          <button
+            onClick={handleAddToCart}
+            className="flex items-center space-x-2 bg-lime-600 px-4 py-2 rounded-md text-white"
+          >
+            <BaggageClaim />
+            <span>Add</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-
-
-);
+  );
 }

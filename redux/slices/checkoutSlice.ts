@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export interface CheckoutState {
+interface CheckoutState {
   currentStep: number;
   checkoutFormData: Record<string, unknown>;
 }
@@ -14,10 +14,9 @@ const checkoutSlice = createSlice({
   name: "checkout",
   initialState,
   reducers: {
-    setCheckoutStep: (state, action: PayloadAction<number>) => {
+    setCurrentStep: (state, action: PayloadAction<number>) => {
       state.currentStep = action.payload;
     },
-
     updateCheckoutFormData: (
       state,
       action: PayloadAction<Record<string, unknown>>
@@ -27,18 +26,10 @@ const checkoutSlice = createSlice({
         ...action.payload,
       };
     },
-
-    resetCheckout: (state) => {
-      state.currentStep = 1;
-      state.checkoutFormData = {};
-    },
   },
 });
 
-export const {
-  setCheckoutStep,
-  updateCheckoutFormData,
-  resetCheckout,
-} = checkoutSlice.actions;
+export const { setCurrentStep, updateCheckoutFormData } =
+  checkoutSlice.actions;
 
 export default checkoutSlice.reducer;

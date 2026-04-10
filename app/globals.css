@@ -1,28 +1,35 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* ================= ORANGE GLASS THEME ================= */
 
-@custom-variant dark (&:is(.dark *));
+/* app/globals.css */
 
-@theme {
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
-  --color-border: #e5e7eb;
 
-  /* 🔥 ORANGE BRAND */
-  --color-primary: #f97316;   /* orange-500 */
-  --color-secondary: #fb923c; /* orange-400 */
-  --color-muted: #f3f4f6;
-  --color-card: #ffffff;
+
+/* Gradient Background */
+body {
+  @apply bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900;
 }
 
-.dark {
-  --color-background: #020617;
-  --color-foreground: #f8fafc;
-  --color-border: #1f2937;
+/* Animated Gradient */
+@keyframes gradientMove {
+  0% { background-position: 0% }
+  100% { background-position: 200% }
+}
 
-  --color-primary: #fb923c;
-  --color-secondary: #f97316;
-  --color-muted: #111827;
-  --color-card: #020617;
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientMove 8s linear infinite;
+}
+
+/* Floating Effect */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.float {
+  animation: float 5s ease-in-out infinite;
 }

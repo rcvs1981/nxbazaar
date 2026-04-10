@@ -25,7 +25,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   const page = Number(searchParams?.page ?? 1);
 
   // ✅ Fetch category
-  const category = await getcategories(`/filter/${slug}`);
+  const category = await getCategories(`/filter/${slug}`);
 
   if (!category) {
     return <div>Category not found</div>;
@@ -36,7 +36,7 @@ export default async function Page({ params, searchParams }: PageProps) {
     max ? `&max=${max}` : ""
   }`;
 
-  const products = await getproducts(query);
+  const products = await getProducts(query);
 
   if (!products) {
     return <div>No products found</div>;

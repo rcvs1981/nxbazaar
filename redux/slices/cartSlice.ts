@@ -1,94 +1,111 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+/* ================= TYPES ================= */
+
 export interface CartItem {
   id: string;
   title: string;
   salePrice: number;
-  imageUrl: string;
   qty: number;
-  vendorId: string;
+  imageUrl?: string;
+  vendorId?: string;
 }
 
-export interface AddToCartPayload {
-  id: string;
-  title: string;
-  salePrice: number;
-  imageUrl: string;
-  userId: string;
-}
+/* ================= INITIAL STATE ================= */
 
-function readCartFromStorage(): CartItem[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = localStorage.getItem("cart");
-    return raw ? (JSON.parse(raw) as CartItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistCart(state: CartItem[]) {
+const getInitialState = (): CartItem[] => {
+  // 🚨 SSR safe
   if (typeof window !== "undefined") {
-    localStorage.setItem("cart", JSON.stringify(state));
+    try {
+      const data = localStorage.getItem("cart");
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
   }
-}
+  return [];
+};
 
-const initialState: CartItem[] = readCartFromStorage();
+const initialState: CartItem[] = getInitialState();
+
+/* ================= SLICE ================= */
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<AddToCartPayload>) => {
-      const { id, title, salePrice, imageUrl, userId } = action.payload;
+    addToCart: (
+      state,
+      action: PayloadAction<Omit<CartItem, "qty">>
+    ) => {
+      console.log("ADDING TO CART:", action.payload);
 
-      const existing = state.find((item) => item.id === id);
+      const existingItem = state.find(
+        (item) => item.id === action.payload.id
+      );
 
-      if (existing) {
-        existing.qty += 1;
+      if (existingItem) {
+        existingItem.qty += 1;
       } else {
         state.push({
-          id,
-          title,
-          salePrice,
-          imageUrl,
+          ...action.payload,
+           salePrice: Number(action.payload.salePrice), 
           qty: 1,
-          vendorId: userId,
         });
       }
 
-      persistCart([...state]);
+      // ✅ localStorage sync
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cart", JSON.stringify(state));
+      }
     },
 
     removeFromCart: (state, action: PayloadAction<string>) => {
-      const newState = state.filter((item) => item.id !== action.payload);
-      persistCart(newState);
+      const newState = state.filter(
+        (item) => item.id !== action.payload
+      );
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cart", JSON.stringify(newState));
+      }
+
       return newState;
     },
 
     incrementQty: (state, action: PayloadAction<string>) => {
       const item = state.find((i) => i.id === action.payload);
-      if (!item) return;
 
-      item.qty += 1;
-      persistCart([...state]);
+      if (item) {
+        item.qty += 1;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cart", JSON.stringify(state));
+      }
     },
 
     decrementQty: (state, action: PayloadAction<string>) => {
       const item = state.find((i) => i.id === action.payload);
-      if (!item || item.qty <= 1) return;
 
-      item.qty -= 1;
-      persistCart([...state]);
+      if (item && item.qty > 1) {
+        item.qty -= 1;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cart", JSON.stringify(state));
+      }
     },
 
     clearCart: () => {
-      persistCart([]);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("cart");
+      }
       return [];
     },
   },
 });
+
+/* ================= EXPORTS ================= */
 
 export const {
   addToCart,

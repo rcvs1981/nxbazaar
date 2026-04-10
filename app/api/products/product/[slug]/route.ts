@@ -1,40 +1,34 @@
-import {db} from "@/lib/db";
-import { NextResponse } from "next/server";
-
-interface RouteContext {
-  params: {
-    slug: string;
-  };
-}
+import { db } from "@/lib/db";
 
 export async function GET(
-  request: Request,
-  { params }: RouteContext
+  req: Request,
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await context.params;
+
+    // ✅ Validate slug
+    if (!slug) {
+      return new Response("Invalid slug", { status: 400 });
+    }
+
+    // ✅ Fetch product with relations (important for ecommerce)
     const product = await db.product.findUnique({
-      where: {
-        slug: params.slug,
-      },
+      where: { slug },
       include: {
         category: true,
+        user: true,
+        hsnCode: true,
       },
     });
 
     if (!product) {
-      return NextResponse.json(
-        { message: "Product not found" },
-        { status: 404 }
-      );
+      return new Response("Product not found", { status: 404 });
     }
 
-    return NextResponse.json(product);
+    return Response.json(product);
   } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { message: "Failed to fetch product" },
-      { status: 500 }
-    );
+    console.error("🔥 API ERROR:", error);
+    return new Response("Internal Server Error", { status: 500 });
   }
 }

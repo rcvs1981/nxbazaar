@@ -125,7 +125,7 @@ const [imageUrl, setImageUrl] = useState(updateData?.imageUrl ?? "");
   onSubmit={handleSubmit(onSubmit)}
   onSubmit={handleSubmit(onSubmit)}
   className="max-w-5xl mx-auto p-6 rounded-xl 
-  bg-transparent
+  
   border-2 border-orange-500 dark:border-orange-900
   shadow-sm space-y-6"
 >

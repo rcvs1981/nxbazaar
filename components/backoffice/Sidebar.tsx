@@ -32,6 +32,7 @@ import {
 
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { motion } from "framer-motion";
 
 /* ---------------- TYPES ---------------- */
 
@@ -39,8 +40,6 @@ type SidebarProps = {
   showSidebar: boolean;
   setShowSidebar: (value: boolean) => void;
 };
-
-type Role = "ADMIN" | "SELLER" | "USER";
 
 type NavItem = {
   title: string;
@@ -54,79 +53,36 @@ export default function Sidebar({
   showSidebar,
   setShowSidebar,
 }: SidebarProps) {
-  const [openMenu, setOpenMenu] = useState<boolean>(false);
+  const [openMenu, setOpenMenu] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data: session, status } = useSession();
-
-  if (status === "loading") return <p>Loading...</p>;
-
-  const role = session?.user?.role as Role | undefined;
-  const userStatus = session?.user?.status ?? false;
+  const { status } = useSession();
+  if (status === "loading") return null;
 
   /* ---------------- LINKS ---------------- */
 
-  let sidebarLinks: NavItem[] = [
+  const sidebarLinks: NavItem[] = [
     { title: "Customers", icon: Users2, href: "/dashboard/customers" },
     { title: "Markets", icon: Warehouse, href: "/dashboard/markets" },
     { title: "Sellers", icon: UserSquare2, href: "/dashboard/sellers" },
     { title: "Orders", icon: Truck, href: "/dashboard/orders" },
     { title: "Sales", icon: Truck, href: "/dashboard/sales" },
     { title: "Wallet", icon: CircleDollarSign, href: "/dashboard/wallet" },
-    {
-      title: "Sellers Support",
-      icon: HeartHandshake,
-      href: "/dashboard/seller-support",
-    },
+    { title: "Support", icon: HeartHandshake, href: "/dashboard/seller-support" },
     { title: "Settings", icon: LayoutGrid, href: "/dashboard/settings" },
-    { title: "Online Store", icon: ExternalLink, href: "/" },
+    { title: "Store", icon: ExternalLink, href: "/" },
   ];
 
-  let catalogueLinks: NavItem[] = [
+  const catalogueLinks: NavItem[] = [
     { title: "Products", icon: Boxes, href: "/dashboard/products" },
     { title: "Categories", icon: LayoutList, href: "/dashboard/categories" },
-     { title: "Sub-Categories", icon: LayoutList, href: "/dashboard/subcategories" },
+    { title: "Sub-Categories", icon: LayoutList, href: "/dashboard/subcategories" },
     { title: "Coupons", icon: ScanSearch, href: "/dashboard/coupons" },
-    { title: "Store Banners", icon: MonitorPlay, href: "/dashboard/banners" },
+    { title: "Banners", icon: MonitorPlay, href: "/dashboard/banners" },
   ];
-
-  /* ---------------- ROLE BASED ---------------- */
-
-  if (role === "SELLER") {
-    sidebarLinks = [
-      { title: "Sales", icon: Truck, href: "/dashboard/sales" },
-      { title: "Wallet", icon: CircleDollarSign, href: "/dashboard/wallet" },
-      {
-        title: "Seller Support",
-        icon: HeartHandshake,
-        href: "/dashboard/seller-support",
-      },
-      { title: "Settings", icon: LayoutGrid, href: "/dashboard/settings" },
-      { title: "Online Store", icon: ExternalLink, href: "/" },
-    ];
-
-    catalogueLinks = [
-      { title: "Products", icon: Boxes, href: "/dashboard/products" },
-      { title: "Coupons", icon: ScanSearch, href: "/dashboard/coupons" },
-    ];
-  }
-
-  if (role === "USER") {
-    sidebarLinks = [
-      { title: "My Orders", icon: Truck, href: "/dashboard/orders" },
-      { title: "Profile", icon: Truck, href: "/dashboard/profile" },
-      { title: "Online Store", icon: ExternalLink, href: "/" },
-    ];
-
-    catalogueLinks = [];
-  }
-
-  if (role === "SELLER" && !userStatus) {
-    sidebarLinks = [];
-    catalogueLinks = [];
-  }
 
   /* ---------------- LOGOUT ---------------- */
 
@@ -138,105 +94,129 @@ export default function Sidebar({
   /* ---------------- UI ---------------- */
 
   return (
-  <div
-  className={`${
-    showSidebar ? "block" : "hidden"
-  } sm:block fixed left-0 top-0 z-40 w-64 h-screen 
-  mt-16 sm:mt-0
-  overflow-y-auto
-  bg-orange-200 dark:bg-orange-500
-  border-r border-orange-200 dark:border-orange-400
-  shadow-sm
-  transition-all duration-300
-  scrollbar-thin scrollbar-thumb-orange-300 dark:scrollbar-thumb-orange-700`}
->
-      {/* LOGO */}
-      <Link
-        onClick={() => setShowSidebar(false)}
-        href="/dashboard"
-        className="px-6 py-4"
-      >
-        <Image src={logo} alt="logo" className="w-36" />
-      </Link>
+    <motion.aside
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      animate={{ width: expanded ? 240 : 80 }}
+      transition={{ duration: 0.3 }}
+      className={`
+        ${showSidebar ? "block" : "hidden"} sm:block
+        fixed left-1 top-20 z-40
+        h-[calc(100vh-2rem)]
+        rounded-2xl p-[1px]
+        bg-gradient-to-b from-purple-500/30 to-pink-500/20
+      `}
+    >
+      {/* Glass */}
+      <div className="
+        h-full rounded-2xl
+        backdrop-blur-2xl
+        bg-white/5 border border-white/10
+        shadow-[0_20px_60px_rgba(255,115,0,0.3)]
+        flex flex-col overflow-hidden
+      ">
 
-      {/* DASHBOARD */}
-      <Link
-        href="/dashboard"
-        onClick={() => setShowSidebar(false)}
-        className={`flex items-center space-x-3 px-6 py-2 ${
-          pathname === "/dashboard"
-            ? "border-l-8 border-lime-500 text-lime-500"
-            : ""
-        }`}
-      >
-        <LayoutGrid />
-        <span>Dashboard</span>
-      </Link>
+        {/* LOGO */}
+        <div className="p-4 flex justify-center">
+          <Image src={logo} alt="logo" className="w-10" />
+        </div>
 
-      {/* CATALOGUE */}
-      {catalogueLinks.length > 0 && (
-        <Collapsible className="px-6">
-          <CollapsibleTrigger onClick={() => setOpenMenu(!openMenu)}>
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center space-x-3">
+        {/* DASHBOARD */}
+        <NavItemUI
+          expanded={expanded}
+          href="/dashboard"
+          icon={LayoutGrid}
+          label="Dashboard"
+          active={pathname === "/dashboard"}
+        />
+
+        {/* CATALOGUE */}
+        <Collapsible open={openMenu} onOpenChange={setOpenMenu}>
+          <CollapsibleTrigger className="px-2">
+            <div className="flex items-center justify-between p-3 hover:bg-white/5 rounded-xl">
+              <div className="flex items-center gap-3">
                 <Slack />
-                <span>Catalogue</span>
+                {expanded && <span>Catalogue</span>}
               </div>
-              {openMenu ? <ChevronDown /> : <ChevronRight />}
+              {expanded && (openMenu ? <ChevronDown /> : <ChevronRight />)}
             </div>
           </CollapsibleTrigger>
 
-          <CollapsibleContent className="pl-6 py-2">
-            {catalogueLinks.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={i}
-                  href={item.href}
-                  onClick={() => setShowSidebar(false)}
-                  className={`flex items-center space-x-2 py-1 text-sm ${
-                    pathname === item.href ? "text-lime-500" : ""
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.title}</span>
-                </Link>
-              );
-            })}
+          <CollapsibleContent className="pl-4 space-y-1">
+            {catalogueLinks.map((item, i) => (
+              <NavItemUI
+                key={i}
+                expanded={expanded}
+                href={item.href}
+                icon={item.icon}
+                label={item.title}
+                active={pathname === item.href}
+                small
+              />
+            ))}
           </CollapsibleContent>
         </Collapsible>
-      )}
 
-      {/* LINKS */}
-      {sidebarLinks.map((item, i) => {
-        const Icon = item.icon;
-        return (
-          <Link
-            key={i}
-            href={item.href}
-            onClick={() => setShowSidebar(false)}
-            className={`flex items-center space-x-3 px-6 py-2 ${
-              pathname === item.href
-                ? "border-l-8 border-lime-500 text-lime-500"
-                : ""
-            }`}
+        {/* LINKS */}
+        <div className="mt-2 space-y-1 flex-1">
+          {sidebarLinks.map((item, i) => (
+            <NavItemUI
+              key={i}
+              expanded={expanded}
+              href={item.href}
+              icon={item.icon}
+              label={item.title}
+              active={pathname === item.href}
+            />
+          ))}
+        </div>
+
+        {/* LOGOUT */}
+        <div className="p-3">
+          <button
+            onClick={handleLogout}
+            className="
+              w-full flex items-center gap-3 p-3 rounded-xl
+              hover:bg-red-500/20 transition
+            "
           >
-            <Icon />
-            <span>{item.title}</span>
-          </Link>
-        );
-      })}
-
-      {/* LOGOUT */}
-      <div className="px-6 py-4">
-        <button
-          onClick={handleLogout}
-          className="bg-lime-600 text-white w-full py-2 rounded-md flex items-center justify-center space-x-2"
-        >
-          <LogOut />
-          <span>Logout</span>
-        </button>
+            <LogOut />
+            {expanded && <span>Logout</span>}
+          </button>
+        </div>
       </div>
-    </div>
+    </motion.aside>
+  );
+}
+
+/* ---------------- NAV ITEM ---------------- */
+
+function NavItemUI({
+  href,
+  icon: Icon,
+  label,
+  active,
+  expanded,
+  small,
+}: any) {
+  return (
+    <Link href={href}>
+      <div
+        title={!expanded ? label : ""}
+        className={`
+          flex items-center gap-3
+          ${small ? "px-3 py-3 text-sm" : "px-4 py-4"}
+          rounded-xl transition-all duration-300
+
+          ${active
+            ? "bg-orange-500/20 text-orange-400 shadow-[0_0_20px_rgba(255,115,0,0.5)]"
+            : "hover:bg-white/5 hover:scale-[1.03]"
+          }
+        `}
+      >
+        <Icon className="w-5 h-5" />
+        {expanded && <span>{label}</span>}
+      </div>
+    </Link>
   );
 }

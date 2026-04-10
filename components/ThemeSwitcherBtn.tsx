@@ -1,31 +1,29 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
-export default function ThemeSwitcherBtn() {
+export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // 👉 wait until client mounted
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // ❗ avoid hydration mismatch
-  if (!mounted) return null;
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   return (
-    <button
-      onClick={toggleTheme}
-      className="p-2 rounded-lg bg-muted hover:bg-muted/70 transition"
+    <motion.button
+      whileTap={{ scale: 0.9 }}
+      onClick={() =>
+        setTheme(theme === "dark" ? "light" : "dark")
+      }
+      className="glass px-5 py-5 flex items-center gap-2"
     >
-      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
+      <motion.span
+        key={theme}
+        initial={{ rotate: -180, opacity: 0 }}
+        animate={{ rotate: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        {theme === "dark" ? "🌞" : "🌙"}
+      </motion.span>
+
+      {theme === "dark" ? "" : ""}
+    </motion.button>
   );
 }

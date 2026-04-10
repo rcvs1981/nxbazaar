@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { subCategorySchema } from "@/lib/validators/subcategory.schema"
 import { generateSlug } from "@/lib/utils/Slug"
 
+import { subCategoryTranslationSchema } from "@/lib/validators/subCategoryTranslationSchema";
 export async function createSubCategory(data: unknown) {
   const parsed = subCategorySchema.safeParse(data)
 
@@ -110,5 +111,41 @@ export async function getSubCategoriesByCategory(categoryId: string) {
     include: {
       hsnCode: true, // ✅ IMPORTANT
     },
+  });
+}
+
+"use server";
+
+
+
+export async function createSubCategoryTranslation(data: unknown) {
+  const validated = subCategoryTranslationSchema.parse(data);
+
+  return await prisma.subCategoryTranslation.create({
+    data: validated,
+  });
+}
+
+export async function updateSubCategoryTranslation(
+  id: string,
+  data: unknown
+) {
+  const validated = subCategoryTranslationSchema.parse(data);
+
+  return await prisma.subCategoryTranslation.update({
+    where: { id },
+    data: validated,
+  });
+}
+
+export async function deleteSubCategoryTranslation(id: string) {
+  return await prisma.subCategoryTranslation.delete({
+    where: { id },
+  });
+}
+
+export async function getTranslationsBySubCategory(subCategoryId: string) {
+  return await prisma.subCategoryTranslation.findMany({
+    where: { subCategoryId },
   });
 }

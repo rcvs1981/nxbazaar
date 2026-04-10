@@ -1,44 +1,34 @@
 import { z } from "zod";
 
-/**
- * Base Schema (Single Source of Truth)
- */
-export const categorySchema = z.object({
-   title: z.string().min(2, "Title is required"),
-  slug: z.string().min(2, "Slug is required"),
-  imageUrl: z.string().min(1, "Image is required"),
-  description: z.string().min(5, "Description is required"),
-  isActive: z.boolean(),
+export const translationSchema = z.object({
+  locale: z.enum(["en", "hi", "mr"]), // scalable
+  title: z.string().min(2, "Title is required"),
+  description: z.string().optional(),
 });
 
-/**
- * Type for Form (slug not required)
- */
-export type CategoryFormValues = Omit<
-  z.infer<typeof categorySchema>,
-  "slug"
->;
+export const categoryTranslationSchema = z.object({
+  categoryId: z.string().optional(), // create में optional
+  ...translationSchema.shape,
+});
 
-/**
- * Type for API Payload (slug included)
- */
-
-
-export type CategoryInput = z.infer<typeof categorySchema>;
-
-
-
-/**
- * Form Schema (no slug, isActive optional)
- */
-export const categoryFormSchema = z.object({
+export const categorySchema = z.object({
   title: z.string().min(2, "Title is required"),
+  slug: z.string().min(2, "Slug is required"),
+
   imageUrl: z.string().optional(),
   description: z.string().optional(),
- isActive: z.boolean(),
+
+  isActive: z.boolean().default(true),
+
+  translations: z.array(categoryTranslationSchema).optional(),
 });
 
-/**
- * Types
- */
-export type CategoryPayload = z.infer<typeof categorySchema>;
+export const categoryFormSchema = categorySchema.omit({
+  slug: true,
+});
+
+// API Input
+export type CategoryInput = z.infer<typeof categorySchema>;
+
+// Form Values
+export type CategoryFormValues = z.infer<typeof categoryFormSchema>;

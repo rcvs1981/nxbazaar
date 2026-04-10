@@ -1,106 +1,82 @@
 import { z } from "zod";
 
-/* ================= BASE SCHEMA ================= */
-
-const baseProductSchema = z.object({
-  // ================= BASIC =================
-  title: z.string().trim().min(2, "Title is required"),
-
-  slug: z.string().optional(),
-
-  description: z.string().optional(),
-
-  // ================= IMAGES =================
-  imageUrl: z.string().optional(),
-
-  productImages: z
-    .array(z.string())
-    .min(1, "At least one product image is required"),
-
-  // ================= CODES =================
-  sku: z.string().optional(),
-  barcode: z.string().optional(),
-  productCode: z.string().nullable().optional(),
-
-  // ================= UNIT =================
-  unit: z.string().optional(),
-
-  // ================= PRICING =================
-  productPrice: z.coerce
-    .number()
-    .min(1, "Product price must be greater than 0"),
-
-  salePrice: z.coerce.number().optional(),
-
-  wholesalePrice: z.coerce.number().optional(),
-  wholesaleQty: z.coerce.number().optional(),
-
-  // ================= STOCK =================
-  productStock: z.coerce.number().min(0).optional(),
-  qty: z.coerce.number().optional(),
-
-  // ================= TAGS =================
-  tags: z.array(z.string().trim().min(1)).default([]),
-
-  // ================= STATUS =================
-  isActive: z.boolean().default(true),
-  isWholesale: z.boolean().default(false),
-
-  // ================= RELATIONS =================
-  categoryId: z.string().min(1, "Category required"),
-
-  subCategoryId: z.string().min(1, "SubCategory required"), // ✅ FIXED
-
-  sellerId: z.string().optional(),
-
-  // ================= TAX =================
-  hsnCodeId: z.string().min(1, "HSN required"), // ✅ FIXED
-
-  gstRate: z.coerce.number().optional(),
-  cgst: z.coerce.number().optional(),
-  sgst: z.coerce.number().optional(),
-  igst: z.coerce.number().optional(),
+export const variantAttributeSchema = z.object({
+  name: z.string().min(1, "Attribute name required"),
+  value: z.string().min(1, "Attribute value required"),
 });
 
-/* ================= COMMON VALIDATIONS ================= */
+export const wholesalePricingSchema = z.object({
+  minQty: z.number().min(1),
+  price: z.number().min(0),
+});
 
-function applyCommonValidation(
-  schema: z.ZodTypeAny
-) {
-  return schema.superRefine((data: any, ctx) => {
-    // ✅ SALE PRICE
-    if (
-      data.salePrice !== undefined &&
-      data.productPrice !== undefined &&
-      data.salePrice > data.productPrice
-    ) {
+export const productVariantSchema = z
+  .object({
+    title: z.string().min(1),
+
+    sku: z.string().optional(),
+    barcode: z.string().optional(),
+    productCode: z.string().optional(),
+
+    unit: z.string().optional(),
+
+    price: z.number().min(0),
+    salePrice: z.number().optional(),
+
+    costPrice: z.number().optional(),
+    margin: z.number().optional(),
+
+    stock: z.number().optional(),
+
+    image: z.string().optional(),
+
+    isActive: z.boolean().default(true),
+    isDefault: z.boolean().default(false),
+
+    attributes: z.array(variantAttributeSchema).optional(),
+    wholesalePricing: z.array(wholesalePricingSchema).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.salePrice && data.salePrice > data.price) {
       ctx.addIssue({
         path: ["salePrice"],
-        message: "Sale price must be <= product price",
+        message: "Sale price must be <= price",
         code: z.ZodIssueCode.custom,
       });
     }
+  });
 
-    // ✅ WHOLESALE
-    if (data.isWholesale) {
-      if (!data.wholesalePrice) {
-        ctx.addIssue({
-          path: ["wholesalePrice"],
-          message: "Wholesale price required",
-          code: z.ZodIssueCode.custom,
-        });
-      }
+  export const baseProductSchema = z.object({
+  title: z.string().min(2),
 
-      if (!data.wholesaleQty) {
-        ctx.addIssue({
-          path: ["wholesaleQty"],
-          message: "Minimum quantity required",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
+  slug: z.string().optional(),
+  description: z.string().optional(),
 
-    // ✅ GST RULES
+  imageUrl: z.string().optional(),
+  productImages: z.array(z.string()).min(1),
+
+  unit: z.string().optional(),
+  tags: z.array(z.string()).default([]),
+
+  isActive: z.boolean().default(true),
+  isWholesale: z.boolean().default(false),
+
+  categoryId: z.string(),
+  subCategoryId: z.string().optional(),
+
+  userId: z.string(),
+
+  hsnCodeId: z.string().optional(),
+
+  gstRate: z.number().optional(),
+  cgst: z.number().optional(),
+  sgst: z.number().optional(),
+  igst: z.number().optional(),
+});
+
+
+const applyCommonValidation = (schema: z.ZodTypeAny) =>
+  schema.superRefine((data: any, ctx) => {
     const hasSplitGST = data.cgst || data.sgst || data.igst;
 
     if (data.gstRate && hasSplitGST) {
@@ -119,25 +95,100 @@ function applyCommonValidation(
       });
     }
   });
-}
 
-/* ================= FINAL SCHEMAS ================= */
 
-// 🔥 CREATE (strict)
-export const productSchema = applyCommonValidation(baseProductSchema);
-
-// 🔥 UPDATE (flexible + safe)
-export const updateProductSchema = applyCommonValidation(
-  baseProductSchema.extend({
-    productImages: z.array(z.string()).optional(), // ✅ IMPORTANT FIX
-    subCategoryId: z.string().optional(),
-    hsnCodeId: z.string().optional(),
-  }).partial()
+  export const ProductInputSchema = applyCommonValidation(
+  baseProductSchema
+    .extend({
+      variants: z.array(productVariantSchema).min(1),
+    })
+    .transform((data) => ({
+      ...data,
+      slug: data.slug || generateSlug(data.title),
+    }))
 );
 
-/* ================= TYPES ================= */
+export const productTranslationSchema = z.object({
+  productId: z.string(),
+  locale: z.enum(["en", "hi", "mr"]),
+  title: z.string().min(2),
+  description: z.string().optional(),
+});
 
-export type ProductInput = z.infer<typeof productSchema>;
+export const createProductSchema = ProductInputSchema;
+
+export const updateProductSchema = ProductInputSchema.partial();
+export type ProductInput = z.infer<typeof ProductInputSchema>;
+export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
-export const productsSchema = z.array(productSchema);
+
+import { z } from "zod";
+
+export const variantAttributeSchema = z.object({
+  name: z.string().min(1, "Attribute name required"),
+  value: z.string().min(1, "Attribute value required"),
+});
+
+export const wholesalePricingSchema = z.object({
+  minQty: z.number().min(1),
+  price: z.number().min(0),
+});
+
+export const productVariantSchema = z.object({
+  productId: z.string(),
+
+  title: z.string().min(1),
+
+  sku: z.string().optional(),
+  barcode: z.string().optional(),
+  productCode: z.string().optional(),
+
+  unit: z.string().optional(),
+
+  price: z.number().min(0),
+  salePrice: z.number().optional(),
+
+  costPrice: z.number().optional(),
+  margin: z.number().optional(),
+
+  stock: z.number().optional(),
+  lowStockAlert: z.number().optional(),
+
+  image: z.string().optional(),
+
+  isActive: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
+
+  weight: z.number().optional(),
+  length: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+
+  attributes: z.array(variantAttributeSchema).optional(),
+  wholesalePricing: z.array(wholesalePricingSchema).optional(),
+});
+
+// lib/validations/product.ts
+import { z } from "zod";
+
+export const productSchema = z.object({
+  title: z.string().min(2),
+  slug: z.string().min(2),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  productImages: z.array(z.string()).optional(),
+
+  unit: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+
+  isActive: z.boolean().default(true),
+  isWholesale: z.boolean().default(false),
+
+  categoryId: z.string(),
+  subCategoryId: z.string().optional(),
+  userId: z.string(),
+  hsnCodeId: z.string().optional(),
+});
+
+export type ProductInput = z.infer<typeof productSchema>;

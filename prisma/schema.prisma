@@ -130,7 +130,7 @@ model Category {
   imageUrl    String?
   description String?
   isActive    Boolean @default(true)
-
+translations CategoryTranslation[]
   subCategories SubCategory[]
   products      Product[]
 
@@ -140,6 +140,19 @@ model Category {
   updatedAt DateTime @updatedAt
 }
 
+model CategoryTranslation {
+  id         String @id @default(uuid())
+  locale     String // en, hi
+  title      String
+  description String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+}
+
+
 model SubCategory {
   id          String  @id @default(uuid())
   title       String
@@ -147,7 +160,7 @@ model SubCategory {
   imageUrl    String
   description String
   isActive    Boolean @default(true)
-
+translations SubCategoryTranslation[]
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   hsnCodeId String?
@@ -157,6 +170,18 @@ model SubCategory {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SubCategoryTranslation {
+  id            String @id @default(uuid())
+  locale        String
+  title         String
+  description   String?
+
+  subCategoryId String
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([subCategoryId, locale])
 }
 
 model Market {
@@ -188,48 +213,6 @@ model HsnCode {
   @@index([code])
 }
 
-model Product {
-  id             String   @id @default(uuid())
-  title          String
-  slug           String   @unique
-  description    String?
-  imageUrl       String?
-  productImages  String[]
-  sku            String?
-  barcode        String?  @unique
-  productCode    String?
-  unit           String?
-  productPrice   Float
-  salePrice      Float
-  wholesalePrice Float?
-  wholesaleQty   Int?
-  productStock   Int?
-
-  tags String[]
-
-  isActive    Boolean @default(true)
-  isWholesale Boolean @default(false)
-
-  // CATEGORY
-  categoryId    String
-  category      Category     @relation(fields: [categoryId], references: [id])
-  subCategoryId String?
-  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
-
-  // VENDOR
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // HSN
-  hsnCodeId String?
-  hsnCode   HsnCode? @relation(fields: [hsnCodeId], references: [id])
-
-  orderItems OrderItem[]
-  sales      Sale[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 model Order {
   id String @id @default(uuid())
@@ -369,4 +352,145 @@ model Banner {
   isActive  Boolean
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  title          String
+  slug           String   @unique
+  description    String?
+  imageUrl       String?
+  productImages  String[]
+
+  unit           String?   // kg, pcs, liter
+  tags           String[]
+
+  isActive    Boolean @default(true)
+  isWholesale Boolean @default(false)
+
+  // RELATIONS
+  variants     ProductVariant[]
+  translations ProductTranslation[]
+
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+
+  subCategoryId String?
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  hsnCodeId String?
+  hsnCode   HsnCode? @relation(fields: [hsnCodeId], references: [id])
+
+  orderItems OrderItem[]
+  sales      Sale[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([userId])
+}
+
+model ProductVariant {
+  id        String @id @default(uuid())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  title String // "M / Red"
+
+  // 🔑 Identification
+  sku         String? @unique
+  barcode     String? @unique
+  productCode String?
+
+  unit String? // override unit
+
+  // 💰 Pricing
+  price     Float
+  salePrice Float?
+
+  costPrice Float?
+  margin    Float?
+
+  // 📦 Inventory
+  stock         Int?
+  reservedStock Int  @default(0)
+  lowStockAlert Int?
+
+  // 🖼️ Media
+  image String?
+
+  // ⚙️ Status
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+
+  // 🚚 Shipping
+  weight Float?
+  length Float?
+  width  Float?
+  height Float?
+
+  // 🏷️ Relations
+  attributes        VariantAttribute[]
+  wholesalePricing  WholesalePricing[]
+
+  // 📊 Analytics
+  soldCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([sku])
+  @@index([barcode])
+}
+
+model VariantAttribute {
+  id        String @id @default(uuid())
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  name  String // Size / Color
+  value String // M / Red
+
+  createdAt DateTime @default(now())
+
+  @@index([variantId])
+}
+
+
+model WholesalePricing {
+  id String @id @default(uuid())
+
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  minQty Int
+  price  Float
+
+  createdAt DateTime @default(now())
+
+  @@index([variantId])
+  @@unique([variantId, minQty]) // duplicate tier avoid
+}
+
+model ProductTranslation {
+  id          String @id @default(uuid())
+  locale      String // en, hi, mr
+  title       String
+  description String?
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, locale])
+  @@index([locale])
 }

@@ -9,9 +9,8 @@ export const store = configureStore({
     checkout: checkoutReducer,
     onboarding: onboardingReducer,
   },
-  devTools: process.env.NODE_ENV !== "production",
 });
 
-// Types for Next.js + React Query Hybrid
+// ✅ Types (VERY IMPORTANT)
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

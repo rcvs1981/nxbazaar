@@ -9,7 +9,7 @@ import {
 } from "@/actions/category"
 import { ActionResponse } from "@/types/action-response"
 import { Category, CategoryFormData } from "@/types/category"
-
+import { getCategories } from "@/actions/category.actions";
 
 
 /* =====================================================
@@ -102,4 +102,12 @@ export function useCategories(initialData: Category[]) {
     initialData,
     staleTime: 1000 * 60 * 5 // 5 min cache
   })
+}
+
+
+export function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
 }

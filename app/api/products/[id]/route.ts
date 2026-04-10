@@ -6,13 +6,27 @@ import { auth } from "@/auth";
 import { updateProduct, deleteProduct } from "@/actions/products";
 /* ================= GET ================= */
 
+
+
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // 👈 FIX
 ): Promise<Response> {
   try {
+    const { id } = await context.params; // 👈 MUST
+
+    console.log("👉 ID:", id); // debug
+
+    if (!id) {
+      return NextResponse.json(
+        { message: "Invalid product id" },
+        { status: 400 }
+      );
+    }
+
     const product = await db.product.findUnique({
-      where: { id: params.id },
+    
+      where: { id },
       include: {
         hsnCode: true,
         category: true,
@@ -29,7 +43,7 @@ export async function GET(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error(error);
+    console.error("🔥 API ERROR:", error);
 
     return NextResponse.json(
       { message: "Failed to fetch product" },

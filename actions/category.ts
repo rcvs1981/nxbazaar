@@ -5,15 +5,19 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { generateSlug } from "@/lib/utils/Slug";
 
+/* ==============================
+TYPES
+============================== */
+
 interface CategoryFormData {
-title: string;
-imageUrl?: string;
+  title: string;
+  imageUrl?: string;
 }
 
 interface ActionResponse<T = null> {
-success: boolean;
-message: string;
-data?: T;
+  success: boolean;
+  message: string;
+  data?: T;
 }
 
 /* ==============================
@@ -21,55 +25,52 @@ CREATE CATEGORY
 ============================== */
 
 export async function createCategory(
-data: CategoryFormData
+  data: CategoryFormData
 ): Promise<ActionResponse<Category>> {
-const slug = generateSlug(data.title);
+  const slug = generateSlug(data.title);
 
-try {
-const category = await db.category.create({
-data: { ...data, slug },
-});
+  try {
+    const category = await db.category.create({
+      data: { ...data, slug },
+    });
 
+    revalidatePath("/dashboard/categories");
 
-revalidatePath("/dashboard/categories");
+    return {
+      success: true,
+      message: "Category created successfully ✅",
+      data: category,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return {
+        success: false,
+        message: "Category already exists ❌",
+      };
+    }
 
-return {
-  success: true,
-  message: "Category created successfully ✅",
-  data: category,
-};
-
-
-} catch (error) {
-if (
-error instanceof Prisma.PrismaClientKnownRequestError &&
-error.code === "P2002"
-) {
-return {
-success: false,
-message: "Category already exists ❌",
-};
-}
-
-
-return {
-  success: false,
-  message: "Failed to create category ❌",
-};
-
-
-}
+    return {
+      success: false,
+      message: "Failed to create category ❌",
+    };
+  }
 }
 
 /* ==============================
 GET ALL CATEGORIES
 ============================== */
 
-export async function getCategories() {
+export async function getCategories(): Promise<Category[]> {
   try {
     const categories = await db.category.findMany({
       include: {
         products: true,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
@@ -81,27 +82,47 @@ export async function getCategories() {
 }
 
 /* ==============================
-GET SINGLE CATEGORY
+GET CATEGORY BY SLUG
 ============================== */
 
-export async function getCategory(
-slug: string
+export async function getCategoryBySlug(
+  slug: string
 ): Promise<Category | null> {
-try {
-const category = await db.category.findUnique({
-where: { slug },
-include: {
-products: true,
-},
-});
+  try {
+    const category = await db.category.findUnique({
+      where: { slug },
+      include: {
+        products: true,
+      },
+    });
 
-
-return category;
-
-
-} catch {
-return null;
+    return category;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 }
+
+/* ==============================
+GET CATEGORY BY ID
+============================== */
+
+export async function getCategoryById(
+  id: string
+): Promise<Category | null> {
+  try {
+    const category = await db.category.findUnique({
+      where: { id },
+      include: {
+        products: true,
+      },
+    });
+
+    return category;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 }
 
 /* ==============================
@@ -109,47 +130,46 @@ UPDATE CATEGORY
 ============================== */
 
 export async function updateCategory(
-id: string,
-data: CategoryFormData
+  id: string,
+  data: CategoryFormData
 ): Promise<ActionResponse<Category>> {
-const slug = generateSlug(data.title);
+  const slug = generateSlug(data.title);
 
-try {
-const existing = await db.category.findFirst({
-where: {
-slug,
-NOT: { id },
-},
-});
+  try {
+    const existing = await db.category.findFirst({
+      where: {
+        slug,
+        NOT: { id },
+      },
+    });
 
+    if (existing) {
+      return {
+        success: false,
+        message: "Another category with this title exists ❌",
+      };
+    }
 
-if (existing) {
-  return {
-    success: false,
-    message: "Another category with this title exists ❌",
-  };
-}
+    const category = await db.category.update({
+      where: { id },
+      data: { ...data, slug },
+    });
 
-const category = await db.category.update({
-  where: { id },
-  data: { ...data, slug },
-});
+    revalidatePath("/dashboard/categories");
 
-revalidatePath("/dashboard/categories");
+    return {
+      success: true,
+      message: "Category updated successfully ✏️",
+      data: category,
+    };
+  } catch (error) {
+    console.log(error);
 
-return {
-  success: true,
-  message: "Category updated successfully ✏️",
-  data: category,
-};
-
-
-} catch {
-return {
-success: false,
-message: "Failed to update category ❌",
-};
-}
+    return {
+      success: false,
+      message: "Failed to update category ❌",
+    };
+  }
 }
 
 /* ==============================
@@ -157,26 +177,25 @@ DELETE CATEGORY
 ============================== */
 
 export async function deleteCategory(
-id: string
+  id: string
 ): Promise<ActionResponse> {
-try {
-await db.category.delete({
-where: { id },
-});
+  try {
+    await db.category.delete({
+      where: { id },
+    });
 
+    revalidatePath("/dashboard/categories");
 
-revalidatePath("/dashboard/categories");
+    return {
+      success: true,
+      message: "Category deleted successfully 🗑️",
+    };
+  } catch (error) {
+    console.log(error);
 
-return {
-  success: true,
-  message: "Category deleted successfully 🗑️",
-};
-
-
-} catch {
-return {
-success: false,
-message: "Failed to delete category ❌",
-};
-}
+    return {
+      success: false,
+      message: "Failed to delete category ❌",
+    };
+  }
 }

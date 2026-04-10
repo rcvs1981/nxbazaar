@@ -10,3 +10,16 @@ export const subCategorySchema = z.object({
 })
 
 export type SubCategoryInput = z.infer<typeof subCategorySchema>
+
+
+import { z } from "zod";
+
+export const subCategoryTranslationSchema = z.object({
+  locale: z.string().min(2, "Locale required"),
+  title: z.string().min(2, "Title required"),
+  description: z.string().optional(),
+  subCategoryId: z.string().min(1, "SubCategory required"),
+});
+
+export type SubCategoryTranslationInput =
+  z.infer<typeof subCategoryTranslationSchema>;

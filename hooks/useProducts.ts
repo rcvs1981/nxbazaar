@@ -7,7 +7,8 @@ import {
   CreateProductInput,
   UpdateProductInput,
 } from "@/types/product";
-
+import { ProductSchema } from "@/lib/validators/productSchema";
+import { getProducts } from "@/actions/product.actions";
 /* ================= GET ================= */
 
 export function useProducts() {
@@ -71,6 +72,49 @@ export function useDeleteProduct() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useProduct(
+  slug: string,
+  initialData: Product
+) {
+  return useQuery<Product>({
+    queryKey: ["product", slug],
+    queryFn: async (): Promise<Product> => {
+      const res = await api.get(`/product/${slug}`);
+      return ProductSchema.parse(res.data);
+    },
+    initialData,
+  });
+}
+
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { fetchProductTranslations } from "@/lib/api/productTranslation";
+
+export function useProductTranslations(productId: string) {
+  return useQuery({
+    queryKey: ["product-translations", productId],
+    queryFn: () => fetchProductTranslations(productId),
+    enabled: !!productId,
+  });
+}
+
+
+
+export function useCreateVariant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await axios.post("/api/product-variants", data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["variants"] });
     },
   });
 }
